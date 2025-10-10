@@ -154,24 +154,45 @@ document.addEventListener("DOMContentLoaded", () => {
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();
-
+  
     password.dispatchEvent(new Event("input"));
     confirmPw.dispatchEvent(new Event("input"));
-
+  
     if (!form.checkValidity()) {
       form.classList.add("was-validated");
       return;
     }
-
+  
     const accountType = (document.querySelector("input[name=accountType]:checked") || {}).value || "buyer";
-    alert(
-        `Account:
-        Name: ${firstName.value.trim()} ${lastName.value.trim()}
-        Email: ${email.value.trim()}
-        Location: ${locationEl.value.trim()}
-        Type: ${accountType}`
-    );
+    const STORAGE_KEY = "secondhand.users";
+  
+    const record = {
+      firstName : firstName.value.trim(),
+      lastName  : lastName.value.trim(),
+      email     : email.value.trim(),
+      location  : locationEl.value.trim(),
+      accountType,
+      password  : password.value
+    };
+  
+    try {
+      const all = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+  
+      const targetEmail = record.email.toLowerCase();
+      const exists = all.some(u => (u.email || "").trim().toLowerCase() === targetEmail);
+      if (exists) {
+        alert("This email has been registered.");
+        return;
+      }
 
+      all.push(record);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+    } catch (err) {
+      console.warn("Save to localStorage failed:", err);
+    }
+  
+    alert("Registered successfully!");
+  
     form.reset();
     form.classList.remove("was-validated");
     [password, confirmPw, firstName, lastName, email, locationEl].forEach(el=>{
@@ -184,6 +205,6 @@ document.addEventListener("DOMContentLoaded", () => {
     togglePwd.innerHTML = `<i class="bi bi-eye"></i>`;
     password.type = "password";
   });
-
+  
   setStrengthUI(1);
 });

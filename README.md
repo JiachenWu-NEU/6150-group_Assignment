@@ -14,7 +14,7 @@
 
 - js techniques
 
-    - validation(using regular expressions), strength meter, toggle password, card selection, submit alert, file reading and writing
+    - validation(using regular expressions), strength meter, toggle password, card selection, submit alert, local storage management
 
 - others
 
