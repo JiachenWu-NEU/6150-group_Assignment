@@ -152,5 +152,38 @@ document.addEventListener("DOMContentLoaded", () => {
   liveRequired(email,     "Please enter a valid email");
   liveRequired(locationEl,"Please enter your location");
 
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+
+    password.dispatchEvent(new Event("input"));
+    confirmPw.dispatchEvent(new Event("input"));
+
+    if (!form.checkValidity()) {
+      form.classList.add("was-validated");
+      return;
+    }
+
+    const accountType = (document.querySelector("input[name=accountType]:checked") || {}).value || "buyer";
+    alert(
+        `Account:
+        Name: ${firstName.value.trim()} ${lastName.value.trim()}
+        Email: ${email.value.trim()}
+        Location: ${locationEl.value.trim()}
+        Type: ${accountType}`
+    );
+
+    form.reset();
+    form.classList.remove("was-validated");
+    [password, confirmPw, firstName, lastName, email, locationEl].forEach(el=>{
+      el.classList.remove("is-valid","is-invalid");
+    });
+    setStrengthUI(1);
+    document.querySelectorAll(".account-type-card").forEach(c => c.classList.remove("selected"));
+    const buyerCard = document.querySelector(".account-type-card input#buyer")?.closest(".account-type-card");
+    if (buyerCard) buyerCard.classList.add("selected");
+    togglePwd.innerHTML = `<i class="bi bi-eye"></i>`;
+    password.type = "password";
+  });
+
   setStrengthUI(1);
 });
