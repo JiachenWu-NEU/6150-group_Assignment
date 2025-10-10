@@ -10,11 +10,11 @@
 
 - HTML Tags Used
 
-    - `div` `h1` `p` `form` `label` `input` `type` `span` `i` `button` `a` `progress`
+    - `div` `h1` `p` `form` `label` `input` `type` `span` `i` `button` `a` `progress` `ul` `li` `nav` `option` `head` `body` `footer`
 
 - js techniques
 
-    - validation(using regular expressions), strength meter, toggle password, card selection, submit alert
+    - validation(using regular expressions), strength meter, toggle password, card selection, submit alert, file reading and writing
 
 - others
 
