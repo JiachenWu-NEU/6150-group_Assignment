@@ -19,3 +19,4 @@
 - others
 
     - using bootstrap for beautifying pages
+    - including `navbar` `nav-item` `hero-section` `btn` `bi` `input-group` `filter-section` `row` `col` `checkbox` `form` `text`
