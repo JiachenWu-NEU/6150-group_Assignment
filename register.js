@@ -192,6 +192,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   
     alert("Registered successfully!");
+    window.location.href = "login.html";
   
     form.reset();
     form.classList.remove("was-validated");
