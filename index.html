@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ECO-ROUND - Your Second-Hand Marketplace</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --primary-color: #2c3e50;
+        --secondary-color: #3498db;
+        --accent-color: #e74c3c;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      .hero-section {
+        background: linear-gradient(
+          135deg,
+          var(--primary-color) 0%,
+          var(--secondary-color) 100%
+        );
+        color: white;
+        padding: 80px 0;
+        margin-top: 56px;
+      }
+
+      .search-bar {
+        max-width: 600px;
+        margin: 30px auto;
+      }
+
+      .product-card {
+        transition: transform 0.3s, box-shadow 0.3s;
+        height: 100%;
+      }
+
+      .product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      }
+
+      .category-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 1;
+      }
+
+      .price-tag {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: var(--accent-color);
+      }
+
+      .navbar {
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .filter-section {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+      }
+
+      .feature-icon {
+        font-size: 3rem;
+        color: var(--secondary-color);
+      }
+
+      .product-card img {
+        object-fit: cover;
+        height: 200px;
+      }
+
+      .img-hover-zoom {
+        overflow: hidden;
+      }
+
+      .img-hover-zoom img {
+        transition: transform 0.3s ease;
+      }
+
+      .img-hover-zoom:hover img {
+        transform: scale(1.1);
+      }
+
+      .featured-seller-img {
+        width: 60px;
+        height: 60px;
+        object-fit: cover;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+      <div class="container">
+        <a class="navbar-brand" href="#">
+          <i class="bi bi-recycle"></i> ECO-ROUND
+        </a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item">
+              <a class="nav-link active" href="#">Home</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#products">Products</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#about">About</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="Login.html">Login</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="Register.html">Sign Up</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <section class="hero-section">
+      <div class="container text-center">
+        <h1 class="display-4 fw-bold mb-3">
+          Discover Quality Second-Hand Items
+        </h1>
+        <p class="lead mb-4">
+          Buy and sell pre-loved items with ease. Save money, save the planet.
+        </p>
+
+        <div class="search-bar">
+          <div class="input-group input-group-lg">
+            <input
+              type="text"
+              class="form-control"
+              placeholder="Search for items..."
+              id="searchInput"
+            />
+            <button class="btn btn-warning" type="button" id="searchBtn">
+              <i class="bi bi-search"></i> Search
+            </button>
+          </div>
+        </div>
+
+        <div class="btn-group mt-3" role="group">
+          <button type="button" class="btn btn-outline-light">
+            Electronics
+          </button>
+          <button type="button" class="btn btn-outline-light">Furniture</button>
+          <button type="button" class="btn btn-outline-light">Clothing</button>
+          <button type="button" class="btn btn-outline-light">Books</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="container mt-5">
+      <div class="filter-section">
+        <div class="row align-items-center">
+          <div class="col-md-4">
+            <h5><i class="bi bi-funnel"></i> Filter Products</h5>
+          </div>
+          <div class="col-md-4">
+            <select class="form-select" id="categoryFilter">
+              <option selected>All Categories</option>
+              <option value="electronics">Electronics</option>
+              <option value="furniture">Furniture</option>
+              <option value="clothing">Clothing</option>
+              <option value="books">Books</option>
+              <option value="sports">Sports</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <select class="form-select" id="priceFilter">
+              <option selected>All Prices</option>
+              <option value="0-50">$0 - $50</option>
+              <option value="50-100">$50 - $100</option>
+              <option value="100-200">$100 - $200</option>
+              <option value="200-500">$200 - $500</option>
+              <option value="500+">$500+</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="products" class="container my-5">
+      <h2 class="text-center mb-4">Featured Products</h2>
+
+      <div class="row g-4" id="productContainer">
+        <div class="col-lg-3 col-md-4 col-sm-6">
+          <div class="card product-card">
+            <span class="badge bg-primary category-badge">Electronics</span>
+            <div class="img-hover-zoom">
+              <img
+                src="https://images.unsplash.com/photo-1611472173362-3f53dbd65d80?w=300&h=200&fit=crop"
+                class="card-img-top img-fluid"
+                alt="iPhone 12"
+              />
+            </div>
+            <div class="card-body">
+              <h5 class="card-title">iPhone 12 Pro</h5>
+              <p class="card-text text-muted">128GB, Excellent condition</p>
+              <p class="price-tag">$599</p>
+              <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">
+                  <i class="bi bi-geo-alt"></i> New York
+                </small>
+                <button class="btn btn-sm btn-primary">View Details</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-3 col-md-4 col-sm-6">
+          <div class="card product-card">
+            <span class="badge bg-success category-badge">Furniture</span>
+            <div class="img-hover-zoom">
+              <img
+                src="https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=300&h=200&fit=crop"
+                class="card-img-top img-fluid"
+                alt="Sofa"
+              />
+            </div>
+            <div class="card-body">
+              <h5 class="card-title">Modern Sofa</h5>
+              <p class="card-text text-muted">3-seater, Like new</p>
+              <p class="price-tag">$350</p>
+              <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">
+                  <i class="bi bi-geo-alt"></i> Boston
+                </small>
+                <button class="btn btn-sm btn-primary">View Details</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-3 col-md-4 col-sm-6">
+          <div class="card product-card">
+            <span class="badge bg-warning category-badge">Clothing</span>
+            <div class="img-hover-zoom">
+              <img
+                src="https://images.unsplash.com/photo-1551028719-00167b16eac5?w=300&h=200&fit=crop"
+                class="card-img-top img-fluid"
+                alt="Jacket"
+              />
+            </div>
+            <div class="card-body">
+              <h5 class="card-title">Leather Jacket</h5>
+              <p class="card-text text-muted">Size M, Gently used</p>
+              <p class="price-tag">$120</p>
+              <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">
+                  <i class="bi bi-geo-alt"></i> Chicago
+                </small>
+                <button class="btn btn-sm btn-primary">View Details</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-3 col-md-4 col-sm-6">
+          <div class="card product-card">
+            <span class="badge bg-info category-badge">Books</span>
+            <div class="img-hover-zoom">
+              <img
+                src="https://images.unsplash.com/photo-1495446815901-a7297e633e8d?w=300&h=200&fit=crop"
+                class="card-img-top img-fluid"
+                alt="Books"
+              />
+            </div>
+            <div class="card-body">
+              <h5 class="card-title">Programming Books</h5>
+              <p class="card-text text-muted">Set of 5 books</p>
+              <p class="price-tag">$45</p>
+              <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">
+                  <i class="bi bi-geo-alt"></i> Seattle
+                </small>
+                <button class="btn btn-sm btn-primary">View Details</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-3 col-md-4 col-sm-6">
+          <div class="card product-card">
+            <span class="badge bg-primary category-badge">Electronics</span>
+            <div class="img-hover-zoom">
+              <img
+                src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=300&h=200&fit=crop"
+                class="card-img-top img-fluid"
+                alt="Laptop"
+              />
+            </div>
+            <div class="card-body">
+              <h5 class="card-title">MacBook Pro 2020</h5>
+              <p class="card-text text-muted">16GB RAM, 512GB SSD</p>
+              <p class="price-tag">$899</p>
+              <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">
+                  <i class="bi bi-geo-alt"></i> San Francisco
+                </small>
+                <button class="btn btn-sm btn-primary">View Details</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-3 col-md-4 col-sm-6">
+          <div class="card product-card">
+            <span class="badge bg-danger category-badge">Sports</span>
+            <div class="img-hover-zoom">
+              <img
+                src="https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?w=300&h=200&fit=crop"
+                class="card-img-top img-fluid"
+                alt="Bike"
+              />
+            </div>
+            <div class="card-body">
+              <h5 class="card-title">Mountain Bike</h5>
+              <p class="card-text text-muted">21-speed, Well maintained</p>
+              <p class="price-tag">$280</p>
+              <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">
+                  <i class="bi bi-geo-alt"></i> Denver
+                </small>
+                <button class="btn btn-sm btn-primary">View Details</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-3 col-md-4 col-sm-6">
+          <div class="card product-card">
+            <span class="badge bg-success category-badge">Furniture</span>
+            <div class="img-hover-zoom">
+              <img
+                src="https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?w=300&h=200&fit=crop"
+                class="card-img-top img-fluid"
+                alt="Desk"
+              />
+            </div>
+            <div class="card-body">
+              <h5 class="card-title">Office Desk</h5>
+              <p class="card-text text-muted">Standing desk, Adjustable</p>
+              <p class="price-tag">$195</p>
+              <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">
+                  <i class="bi bi-geo-alt"></i> Austin
+                </small>
+                <button class="btn btn-sm btn-primary">View Details</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-3 col-md-4 col-sm-6">
+          <div class="card product-card">
+            <span class="badge bg-primary category-badge">Electronics</span>
+            <div class="img-hover-zoom">
+              <img
+                src="https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=300&h=200&fit=crop"
+                class="card-img-top img-fluid"
+                alt="Camera"
+              />
+            </div>
+            <div class="card-body">
+              <h5 class="card-title">Canon DSLR Camera</h5>
+              <p class="card-text text-muted">With lens kit</p>
+              <p class="price-tag">$450</p>
+              <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">
+                  <i class="bi bi-geo-alt"></i> Los Angeles
+                </small>
+                <button class="btn btn-sm btn-primary">View Details</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="about" class="bg-light py-5">
+      <div class="container">
+        <h2 class="text-center mb-5">Why Choose ECO-ROUND?</h2>
+        <div class="row text-center">
+          <div class="col-md-4 mb-4">
+            <i class="bi bi-shield-check feature-icon"></i>
+            <h4 class="mt-3">Secure Transactions</h4>
+            <p>
+              Your safety is our priority with verified sellers and secure
+              payment options.
+            </p>
+          </div>
+          <div class="col-md-4 mb-4">
+            <i class="bi bi-tags feature-icon"></i>
+            <h4 class="mt-3">Best Prices</h4>
+            <p>
+              Find great deals on quality pre-owned items at unbeatable prices.
+            </p>
+          </div>
+          <div class="col-md-4 mb-4">
+            <i class="bi bi-people feature-icon"></i>
+            <h4 class="mt-3">Community Driven</h4>
+            <p>
+              Join thousands of happy buyers and sellers in our trusted
+              marketplace.
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-5">
+          <h3 class="text-center mb-4">Top Rated Sellers</h3>
+          <div class="row justify-content-center">
+            <div class="col-md-2 col-sm-4 text-center mb-3">
+              <img
+                src="https://i.pravatar.cc/60?img=12"
+                class="rounded-circle img-thumbnail featured-seller-img mb-2"
+                alt="Seller 1"
+              />
+              <p class="mb-0 fw-bold">John Smith</p>
+              <small class="text-muted">⭐ 4.9 (150)</small>
+            </div>
+            <div class="col-md-2 col-sm-4 text-center mb-3">
+              <img
+                src="https://i.pravatar.cc/60?img=5"
+                class="rounded-circle img-thumbnail featured-seller-img mb-2"
+                alt="Seller 2"
+              />
+              <p class="mb-0 fw-bold">Sarah Lee</p>
+              <small class="text-muted">⭐ 5.0 (200)</small>
+            </div>
+            <div class="col-md-2 col-sm-4 text-center mb-3">
+              <img
+                src="https://i.pravatar.cc/60?img=33"
+                class="rounded-circle img-thumbnail featured-seller-img mb-2"
+                alt="Seller 3"
+              />
+              <p class="mb-0 fw-bold">Mike Johnson</p>
+              <small class="text-muted">⭐ 4.8 (180)</small>
+            </div>
+            <div class="col-md-2 col-sm-4 text-center mb-3">
+              <img
+                src="https://i.pravatar.cc/60?img=9"
+                class="rounded-circle img-thumbnail featured-seller-img mb-2"
+                alt="Seller 4"
+              />
+              <p class="mb-0 fw-bold">Emma Davis</p>
+              <small class="text-muted">⭐ 4.9 (165)</small>
+            </div>
+            <div class="col-md-2 col-sm-4 text-center mb-3">
+              <img
+                src="https://i.pravatar.cc/60?img=15"
+                class="rounded-circle img-thumbnail featured-seller-img mb-2"
+                alt="Seller 5"
+              />
+              <p class="mb-0 fw-bold">David Wilson</p>
+              <small class="text-muted">⭐ 5.0 (220)</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="bg-dark text-white py-4">
+      <div class="container">
+        <div class="row">
+          <div class="col-md-4">
+            <h5><i class="bi bi-recycle"></i> ECO-ROUND</h5>
+            <p>Your trusted second-hand marketplace</p>
+          </div>
+          <div class="col-md-4">
+            <h5>Quick Links</h5>
+            <ul class="list-unstyled">
+              <li>
+                <a href="#" class="text-white text-decoration-none">About Us</a>
+              </li>
+              <li>
+                <a href="#" class="text-white text-decoration-none">Contact</a>
+              </li>
+              <li>
+                <a href="#" class="text-white text-decoration-none"
+                  >Terms of Service</a
+                >
+              </li>
+              <li>
+                <a href="#" class="text-white text-decoration-none"
+                  >Privacy Policy</a
+                >
+              </li>
+            </ul>
+          </div>
+          <div class="col-md-4">
+            <h5>Connect With Us</h5>
+            <div class="btn-group" role="group">
+              <button type="button" class="btn btn-outline-light">
+                <i class="bi bi-facebook"></i>
+              </button>
+              <button type="button" class="btn btn-outline-light">
+                <i class="bi bi-twitter"></i>
+              </button>
+              <button type="button" class="btn btn-outline-light">
+                <i class="bi bi-instagram"></i>
+              </button>
+              <button type="button" class="btn btn-outline-light">
+                <i class="bi bi-linkedin"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+        <hr class="bg-white" />
+        <p class="text-center mb-0">
+          &copy; 2025 ECO-ROUND. All rights reserved.
+        </p>
+      </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const searchBtn = document.getElementById("searchBtn");
+        const searchInput = document.getElementById("searchInput");
+        const categoryFilter = document.getElementById("categoryFilter");
+        const priceFilter = document.getElementById("priceFilter");
+
+        function filterProducts() {
+          const searchTerm = searchInput.value.toLowerCase();
+          const selectedCategory = categoryFilter.value.toLowerCase();
+          const selectedPriceRange = priceFilter.value;
+          const products = document.querySelectorAll(".product-card");
+
+          products.forEach((product) => {
+            const title = product
+              .querySelector(".card-title")
+              .textContent.toLowerCase();
+            const description = product
+              .querySelector(".card-text")
+              .textContent.toLowerCase();
+            const badge = product
+              .querySelector(".category-badge")
+              .textContent.toLowerCase();
+            const priceText = product.querySelector(".price-tag").textContent;
+            const price = parseInt(priceText.replace("$", ""));
+
+            let showProduct = true;
+
+            if (
+              searchTerm &&
+              !title.includes(searchTerm) &&
+              !description.includes(searchTerm)
+            ) {
+              showProduct = false;
+            }
+
+            if (
+              selectedCategory !== "all categories" &&
+              badge !== selectedCategory
+            ) {
+              showProduct = false;
+            }
+
+            if (selectedPriceRange !== "All Prices") {
+              let inPriceRange = false;
+
+              if (selectedPriceRange === "0-50") {
+                inPriceRange = price >= 0 && price <= 50;
+              } else if (selectedPriceRange === "50-100") {
+                inPriceRange = price > 50 && price <= 100;
+              } else if (selectedPriceRange === "100-200") {
+                inPriceRange = price > 100 && price <= 200;
+              } else if (selectedPriceRange === "200-500") {
+                inPriceRange = price > 200 && price <= 500;
+              } else if (selectedPriceRange === "500+") {
+                inPriceRange = price > 500;
+              }
+
+              if (!inPriceRange) {
+                showProduct = false;
+              }
+            }
+
+            if (showProduct) {
+              product.closest(".col-lg-3").style.display = "block";
+            } else {
+              product.closest(".col-lg-3").style.display = "none";
+            }
+          });
+        }
+
+        if (searchBtn) {
+          searchBtn.addEventListener("click", filterProducts);
+        }
+
+        if (categoryFilter) {
+          categoryFilter.addEventListener("change", filterProducts);
+        }
+
+        if (priceFilter) {
+          priceFilter.addEventListener("change", filterProducts);
+        }
+
+        if (searchInput) {
+          searchInput.addEventListener("keypress", function (e) {
+            if (e.key === "Enter") {
+              filterProducts();
+            }
+          });
+        }
+      });
+    </script>
+  </body>
+</html>
