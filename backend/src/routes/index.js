@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-// add new routes here
+const userRoutes = require("./userRoutes");
+router.use("/user", userRoutes);
 
 module.exports = router;
