@@ -69,5 +69,54 @@ const userController = require("../controllers/userController");
  *         description: Internal server error
  */
 router.post("/create", userController.createUser);
+/**
+ * @openapi
+ * /user/login:
+ *   post:
+ *     summary: Login with email and password
+ *     tags: [User]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *                 format: password
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Login successfully.
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     type:
+ *                       type: string
+ *                       example: admin
+ *                     token:
+ *                       type: string
+ *       400:
+ *         description: Missing email or password
+ *       401:
+ *         description: Invalid email or password
+ *       500:
+ *         description: Internal server error
+ */
+router.post("/login", userController.login);
 
 module.exports = router;
