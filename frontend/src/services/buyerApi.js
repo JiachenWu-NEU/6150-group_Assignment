@@ -123,8 +123,9 @@ export const updateBuyerAddress = async (address) => {
   });
 };
 
-// ==================== Mock数据（临时用） ====================
+// ==================== Mock数据（临时用，等后端接口好了删除） ====================
 
+// Mock 商品列表
 export const mockGetProducts = async () => {
   await new Promise((resolve) => setTimeout(resolve, 500));
 
@@ -134,76 +135,44 @@ export const mockGetProducts = async () => {
       {
         id: "1",
         sellerId: "seller1",
+        sellerName: "TechGuru",
+        sellerRating: 4.8,
         name: "iPhone 13 Pro 128GB",
         price: 699,
+        originalPrice: 999,
         image: "https://via.placeholder.com/300x300?text=iPhone+13",
+        images: [
+          "https://via.placeholder.com/600x600?text=iPhone+13+Front",
+          "https://via.placeholder.com/600x600?text=iPhone+13+Back",
+          "https://via.placeholder.com/600x600?text=iPhone+13+Side",
+          "https://via.placeholder.com/600x600?text=iPhone+13+Box",
+        ],
         description:
-          "Like new condition, no scratches. Comes with all accessories. Selling because upgrading to new model.",
+          "Like new condition iPhone 13 Pro in Graphite color. This phone has been carefully maintained and comes with all original accessories including the box, charging cable, and unused stickers. The battery health is at 95% and there are absolutely no scratches or dents on the device.",
+        condition: "Like New",
+        category: "Electronics",
+        location: "Boston, MA",
         isOnSale: true,
         createdAt: "2024-11-20",
-      },
-      {
-        id: "2",
-        sellerId: "seller2",
-        name: "MacBook Air M2 2023",
-        price: 899,
-        image: "https://via.placeholder.com/300x300?text=MacBook+Air",
-        description:
-          "Almost brand new, only used for 2 months. 8GB RAM + 256GB SSD configuration.",
-        isOnSale: true,
-        createdAt: "2024-11-18",
-      },
-      {
-        id: "3",
-        sellerId: "seller1",
-        name: "Sony WH-1000XM5 Headphones",
-        price: 249,
-        image: "https://via.placeholder.com/300x300?text=Sony+Headphones",
-        description:
-          "Used for 6 months, excellent condition. Amazing noise cancellation.",
-        isOnSale: true,
-        createdAt: "2024-11-15",
-      },
-      {
-        id: "4",
-        sellerId: "seller3",
-        name: 'iPad Pro 11" 2022',
-        price: 649,
-        image: "https://via.placeholder.com/300x300?text=iPad+Pro",
-        description: "Wi-Fi model, 128GB, includes Apple Pencil 2nd Gen.",
-        isOnSale: true,
-        createdAt: "2024-11-10",
-      },
-      {
-        id: "5",
-        sellerId: "seller2",
-        name: "Nintendo Switch OLED",
-        price: 299,
-        image: "https://via.placeholder.com/300x300?text=Switch",
-        description: "International version, includes 3 game cartridges.",
-        isOnSale: true,
-        createdAt: "2024-11-05",
-      },
-      {
-        id: "6",
-        sellerId: "seller3",
-        name: "Canon EOS R6 Camera",
-        price: 1899,
-        image: "https://via.placeholder.com/300x300?text=Canon+R6",
-        description:
-          "Professional full-frame mirrorless camera, shutter count under 1000.",
-        isOnSale: true,
-        createdAt: "2024-11-01",
+        specifications: {
+          Storage: "128GB",
+          Color: "Graphite",
+          "Battery Health": "95%",
+          Condition: "Like New - No scratches",
+          Warranty: "No warranty",
+          Accessories: "Original box, cable, stickers",
+        },
       },
     ],
   };
 };
 
+// Mock 单个商品详情
 export const mockGetProductById = async (productId) => {
   await new Promise((resolve) => setTimeout(resolve, 300));
 
-  const products = (await mockGetProducts()).data;
-  const product = products.find((p) => p.id === productId);
+  const response = await mockGetProducts();
+  const product = response.data.find((p) => p.id === productId);
 
   return {
     success: true,
@@ -211,8 +180,9 @@ export const mockGetProductById = async (productId) => {
   };
 };
 
+// Mock 购物车
 export const mockGetCart = async () => {
-  await new Promise((resolve) => setTimeout(resolve, 300));
+  await new Promise((resolve) => setTimeout(resolve, 500));
 
   return {
     success: true,
@@ -225,9 +195,44 @@ export const mockGetCart = async () => {
           price: 699,
           quantity: 1,
           image: "https://via.placeholder.com/100x100?text=iPhone+13",
+          sellerId: "seller1",
+          sellerName: "TechGuru",
+          isAvailable: true,
         },
       ],
-      total: 699,
     },
+  };
+};
+
+// Mock 更新购物车商品数量
+export const mockUpdateCartItem = async (cartItemId, quantity) => {
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  console.log("Updating cart item:", cartItemId, "new quantity:", quantity);
+
+  return {
+    success: true,
+    message: "Cart updated successfully",
+  };
+};
+
+// Mock 删除购物车商品
+export const mockRemoveFromCart = async (cartItemId) => {
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  console.log("Removing cart item:", cartItemId);
+
+  return {
+    success: true,
+    message: "Item removed from cart",
+  };
+};
+
+// Mock 清空购物车
+export const mockClearCart = async () => {
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  console.log("Clearing entire cart");
+
+  return {
+    success: true,
+    message: "Cart cleared",
   };
 };
