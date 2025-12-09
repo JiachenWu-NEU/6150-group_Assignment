@@ -15,7 +15,7 @@ exports.addToCart = async (req, res) => {
     if (!ensureBuyer(req, res)) return;
 
     const buyerId = req.user.userId;
-    const { productId, quantity } = req.body;
+    const { productId, quantity } = req.body || {};
 
     if (!productId) {
       return res.status(400).json({ error: "productId is required." });
