@@ -5,11 +5,11 @@ const User = require("../models/User");
 const JWT_SECRET = process.env.JWT_SECRET || "alitimig_jwt_secret";
 
 
-exports.createUser = async (req, res) => {
+exports.register = async (req, res) => {
   try {
-    const { username, email, password, type } = req.body;
+    const { username, email, password, type, address, isAvailable } = req.body;
 
-    if (!username || !email || !password || !type) {
+    if (!username || !email || !password || !type || !address) {
       return res.status(400).json({ error: "All fields are required." });
     }
 
@@ -26,6 +26,8 @@ exports.createUser = async (req, res) => {
       email,
       password: hashedPassword,
       type,
+      address,
+      isAvailable,
     });
 
     return res.status(201).json({
@@ -35,6 +37,8 @@ exports.createUser = async (req, res) => {
         username: user.username,
         email: user.email,
         type: user.type,
+        address: user.address,
+        isAvailable: user.isAvailable,
         createdAt: user.createdAt,
       }
     });
@@ -80,6 +84,125 @@ exports.login = async (req, res) => {
     });
   } catch (err) {
     console.error("Error in loginUser:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+exports.updateUser = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { username, address } = req.body;
+
+    if (!username && !address) {
+      return res
+        .status(400)
+        .json({ error: "At least one field (username or address) is required." });
+    }
+
+    const updateFields = {};
+    if (username) updateFields.username = username;
+    if (address) updateFields.address = address;
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $set: updateFields },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    return res.status(200).json({
+      message: "User updated successfully.",
+      data: {
+        username: user.username,
+        email: user.email,
+        type: user.type,
+        address: user.address,
+        isAvailable: user.isAvailable,
+      },
+    });
+  } catch (err) {
+    console.error("Error in updateUser:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+exports.disableUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findByIdAndUpdate(
+      id,
+      { $set: { isAvailable: false } },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    return res.status(200).json({
+      message: "User disabled successfully.",
+      data: {
+        username: user.username,
+        email: user.email,
+        type: user.type,
+        address: user.address,
+        isAvailable: user.isAvailable,
+      },
+    });
+  } catch (err) {
+    console.error("Error in disableUser:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+exports.getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find().sort({ createdAt: -1 });
+
+    const result = users.map((u) => ({
+      id: u._id,
+      username: u.username,
+      email: u.email,
+      type: u.type,
+      address: u.address,
+      isAvailable: u.isAvailable,
+    }));
+
+    return res.status(200).json({
+      message: "Get all users successfully.",
+      data: result,
+    });
+  } catch (err) {
+    console.error("Error in getAllUsers:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+exports.deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findByIdAndDelete(id);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    return res.status(200).json({
+      message: "User deleted successfully.",
+      data: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        type: user.type,
+      },
+    });
+  } catch (err) {
+    console.error("Error in deleteUser:", err);
     return res.status(500).json({ error: "Internal server error." });
   }
 };
