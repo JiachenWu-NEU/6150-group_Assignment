@@ -166,7 +166,7 @@ router.post("/create", auth, uploadProductImage, productController.createProduct
  *       500:
  *         description: Internal server error
  */
-router.put("/:id", auth, productController.updateProduct);
+router.put("/:id", auth, uploadProductImage, productController.updateProduct);
 /**
  * @openapi
  * /product/{id}:

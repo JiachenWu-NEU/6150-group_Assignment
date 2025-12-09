@@ -1,4 +1,6 @@
 const Product = require("../models/Product");
+const fs = require("fs");
+const path = require("path");
 
 exports.createProduct = async (req, res) => {
   try {
@@ -68,21 +70,23 @@ exports.updateProduct = async (req, res) => {
   try {
     const { userId, type } = req.user || {};
     const { id } = req.params;
-    const { name, price, description, isOnSale } = req.body;
+    const { name, price, description } = req.body || {};
 
     if (type !== "vender") {
-      return res.status(403).json({ error: "Only vender can update products." });
+      return res
+        .status(403)
+        .json({ error: "Only vender can update products." });
     }
 
     if (
       !name &&
       typeof price === "undefined" &&
       !description &&
-      typeof isOnSale === "undefined"
+      !req.file
     ) {
       return res.status(400).json({
         error:
-          "At least one field (name, price, description, isOnSale) is required.",
+          "At least one field (name, price, description, image) is required.",
       });
     }
 
@@ -92,7 +96,9 @@ exports.updateProduct = async (req, res) => {
     }
 
     if (product.sellerId.toString() !== userId) {
-      return res.status(403).json({ error: "You can only update your own products." });
+      return res
+        .status(403)
+        .json({ error: "You can only update your own products." });
     }
 
     if (name) product.name = name;
@@ -109,11 +115,27 @@ exports.updateProduct = async (req, res) => {
 
     if (description) product.description = description;
 
-    if (typeof isOnSale !== "undefined") {
-      if (typeof isOnSale === "string") {
-        product.isOnSale = isOnSale.toLowerCase() === "true";
-      } else {
-        product.isOnSale = !!isOnSale;
+    if (req.file) {
+      const oldImagePath = product.imagePath;
+
+      const newImagePath = `/images/${req.file.filename}`;
+      product.imagePath = newImagePath;
+
+      if (oldImagePath) {
+        try {
+          const oldAbsPath = path.join(
+            __dirname,
+            "..",
+            "..",
+            oldImagePath.replace(/^\//, "")
+          );
+
+          if (fs.existsSync(oldAbsPath)) {
+            fs.unlinkSync(oldAbsPath);
+          }
+        } catch (err) {
+          console.error("Failed to delete old product image:", err);
+        }
       }
     }
 
@@ -183,7 +205,7 @@ exports.updateProductAvailability = async (req, res) => {
   try {
     const { userId, type } = req.user || {};
     const { id } = req.params;
-    const { isOnSale } = req.body;
+    const { isOnSale } = req.body || {};
 
     if (type !== "vender") {
       return res

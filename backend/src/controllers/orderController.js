@@ -99,7 +99,7 @@ exports.getMyOrders = async (req, res) => {
   }
 };
 
-const getVenderOrders = async (req, res) => {
+exports.getVenderOrders = async (req, res) => {
   try {
     const { userId, type } = req.user || {};
 
