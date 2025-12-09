@@ -27,7 +27,7 @@ import {
   Logout as LogoutIcon,
 } from "@mui/icons-material";
 import { getUserInfo, logout } from "../../utils/auth";
-import { mockGetProducts, addToCart } from "../../services/api";
+import { mockGetProducts, addToCart } from "../../services/buyerApi";
 import { useNavigate } from "react-router-dom";
 
 function ProductList() {
