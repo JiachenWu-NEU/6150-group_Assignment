@@ -129,7 +129,7 @@ router.post("/create", auth, orderController.createOrderFromCart);
 router.get("/my", auth, orderController.getMyOrders);
 /**
  * @openapi
- * /order/seller:
+ * /order/vender:
  *   get:
  *     summary: Get all sold items for current seller (vender only)
  *     tags:
