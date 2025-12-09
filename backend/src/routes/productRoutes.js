@@ -93,5 +93,247 @@ const { uploadProductImage } = require("../utils/uploadImage");
  *         description: Internal server error
  */
 router.post("/create", auth, uploadProductImage, productController.createProduct);
+/**
+ * @openapi
+ * /product/{id}:
+ *   put:
+ *     summary: Update product details (vender only, owner only)
+ *     tags:
+ *       - Product
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the product to update
+ *       - in: header
+ *         name: Authorization
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Bearer token of vender user
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               price:
+ *                 type: number
+ *               description:
+ *                 type: string
+ *               isOnSale:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Product updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     sellerId:
+ *                       type: string
+ *                     name:
+ *                       type: string
+ *                     price:
+ *                       type: number
+ *                     imagePath:
+ *                       type: string
+ *                     description:
+ *                       type: string
+ *                     isOnSale:
+ *                       type: boolean
+ *       400:
+ *         description: Bad request (nothing to update or invalid price)
+ *       401:
+ *         description: Unauthorized (missing or invalid token)
+ *       403:
+ *         description: Forbidden (not vender or not owner)
+ *       404:
+ *         description: Product not found
+ *       500:
+ *         description: Internal server error
+ */
+router.put("/:id", auth, productController.updateProduct);
+/**
+ * @openapi
+ * /product/{id}:
+ *   delete:
+ *     summary: Delete a product (vender or admin)
+ *     tags:
+ *       - Product
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the product to delete
+ *       - in: header
+ *         name: Authorization
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Bearer token of vender or admin user
+ *     responses:
+ *       200:
+ *         description: Product deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     sellerId:
+ *                       type: string
+ *                     name:
+ *                       type: string
+ *                     price:
+ *                       type: number
+ *                     imagePath:
+ *                       type: string
+ *                     description:
+ *                       type: string
+ *                     isOnSale:
+ *                       type: boolean
+ *       401:
+ *         description: Unauthorized (missing or invalid token)
+ *       403:
+ *         description: Forbidden (not vender or admin)
+ *       404:
+ *         description: Product not found
+ *       500:
+ *         description: Internal server error
+ */
+router.delete("/:id", auth, productController.deleteProduct);
+/**
+ * @openapi
+ * /product/{id}/onsale:
+ *   patch:
+ *     summary: Update product availability (vender only, owner only)
+ *     tags:
+ *       - Product
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the product to update availability
+ *       - in: header
+ *         name: Authorization
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Bearer token of vender user
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - isOnSale
+ *             properties:
+ *               isOnSale:
+ *                 type: boolean
+ *                 example: true
+ *     responses:
+ *       200:
+ *         description: Product availability updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     sellerId:
+ *                       type: string
+ *                     name:
+ *                       type: string
+ *                     price:
+ *                       type: number
+ *                     imagePath:
+ *                       type: string
+ *                     description:
+ *                       type: string
+ *                     isOnSale:
+ *                       type: boolean
+ *       400:
+ *         description: Bad request (missing isOnSale)
+ *       401:
+ *         description: Unauthorized (missing or invalid token)
+ *       403:
+ *         description: Forbidden (not vender or not owner)
+ *       404:
+ *         description: Product not found
+ *       500:
+ *         description: Internal server error
+ */
+router.patch("/:id/onsale", auth, productController.updateProductAvailability);
+/**
+ * @openapi
+ * /product/all:
+ *   get:
+ *     summary: Get all products
+ *     tags:
+ *       - Product
+ *     responses:
+ *       200:
+ *         description: Get all products successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       sellerId:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *                       price:
+ *                         type: number
+ *                       imagePath:
+ *                         type: string
+ *                       description:
+ *                         type: string
+ *                       isOnSale:
+ *                         type: boolean
+ *       500:
+ *         description: Internal server error
+ */
+router.get("/all", productController.getAllProducts);
 
 module.exports = router;
