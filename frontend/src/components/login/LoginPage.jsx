@@ -10,6 +10,10 @@ function LoginPage() {
     password: "",
   });
 
+  // Optional: handle loading and error states
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
   // Handle input change
   const handleChange = (e) => {
     setFormData({
@@ -19,21 +23,57 @@ function LoginPage() {
   };
 
   // Handle form submission
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Simple validation
     if (!formData.email || !formData.password) {
       alert("Please fill in all fields!");
       return;
     }
 
-    // Here you can send login data to backend API
-    console.log("Login data:", formData);
+    setLoading(true);
+    setError("");
 
-    // Example: successful login
-    alert("Login successful!");
-    navigate("/products"); // Redirect to product page after login
+    try {
+      // Send POST request to your backend
+      const response = await fetch("http://localhost:3000/user/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        if (response.status === 400) throw new Error("Missing email or password.");
+        if (response.status === 401) throw new Error("Invalid email or password.");
+        throw new Error("Login failed.");
+      }
+
+      const data = await response.json();
+      console.log("✅ API Response:", data);
+
+      // Example response:
+      // { message: "Login successfully.", data: { type: "admin", token: "..." } }
+
+      // Save token to localStorage (for later authentication)
+      localStorage.setItem("token", data.data.token);
+      localStorage.setItem("userType", data.data.type);
+
+      alert(data.message || "Login successful!");
+
+      // Redirect based on user type
+      if (data.data.type === "admin") {
+        navigate("/admin");
+      } else {
+        navigate("/products");
+      }
+    } catch (err) {
+      console.error(err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -75,19 +115,24 @@ function LoginPage() {
           />
         </div>
 
+        {error && (
+          <p style={{ color: "red", textAlign: "center" }}>{error}</p>
+        )}
+
         <button
           type="submit"
+          disabled={loading}
           style={{
             width: "100%",
             padding: "10px",
-            background: "#007bff",
+            background: loading ? "#999" : "#007bff",
             color: "white",
             border: "none",
             borderRadius: "5px",
             cursor: "pointer",
           }}
         >
-          Login
+          {loading ? "Logging in..." : "Login"}
         </button>
 
         <p style={{ textAlign: "center", marginTop: "15px" }}>
