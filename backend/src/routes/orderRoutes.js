@@ -112,9 +112,15 @@ router.post("/create", auth, orderController.createOrderFromCart);
  *                           properties:
  *                             productId:
  *                               type: string
+ *                             productName:
+ *                               type: string
  *                             sellerId:
  *                               type: string
  *                             quantity:
+ *                               type: number
+ *                             imagePath:
+ *                               type: string
+ *                             price:
  *                               type: number
  *                       createdAt:
  *                         type: string
