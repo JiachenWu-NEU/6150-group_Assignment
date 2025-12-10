@@ -11,7 +11,6 @@ import {
   Divider,
   TextField,
   Avatar,
-  Rating,
   Breadcrumbs,
   Link,
   Card,
@@ -19,16 +18,20 @@ import {
   Snackbar,
   Alert,
   CircularProgress,
+  AppBar,
+  Toolbar,
 } from "@mui/material";
 import {
   ShoppingCart as ShoppingCartIcon,
   Share as ShareIcon,
   Person as PersonIcon,
   ArrowBack as ArrowBackIcon,
+  Chat as ChatIcon,
 } from "@mui/icons-material";
 import { useNavigate, useParams } from "react-router-dom";
 import { getProductById, addToCart } from "../../services/buyerApi";
 import { getUserInfo } from "../../utils/auth";
+import Chatbot from "./Chatbot";
 
 function ProductDetail() {
   const navigate = useNavigate();
@@ -38,6 +41,7 @@ function ProductDetail() {
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [userInfo, setUserInfo] = useState(null);
+  const [chatbotOpen, setChatbotOpen] = useState(false);
 
   // Snackbar state
   const [snackbar, setSnackbar] = useState({
@@ -49,7 +53,16 @@ function ProductDetail() {
   // Get user info
   useEffect(() => {
     const user = getUserInfo();
-    setUserInfo(user);
+    if (!user) {
+      const mockUser = {
+        id: "user123",
+        username: "John Doe",
+        email: "john@example.com",
+      };
+      setUserInfo(mockUser);
+    } else {
+      setUserInfo(user);
+    }
   }, []);
 
   // Fetch product details
@@ -78,7 +91,6 @@ function ProductDetail() {
   };
 
   // Add to cart
-  // Add to cart
   const handleAddToCart = async () => {
     try {
       const response = await addToCart(product.id, quantity);
@@ -98,9 +110,6 @@ function ProductDetail() {
   };
 
   // Buy now
-  const handleBuyNow = () => {
-    navigate("/checkout", { state: { productId: product.id, quantity } });
-  };
 
   // Share product
   const handleShare = () => {
@@ -147,13 +156,51 @@ function ProductDetail() {
   }
 
   return (
-    <Box sx={{ backgroundColor: "#f5f5f5", minHeight: "100vh", py: 4 }}>
-      <Container maxWidth="lg">
-        {/* Breadcrumb Navigation */}
-        <Box sx={{ mb: 3 }}>
-          <IconButton onClick={() => navigate("/products")} sx={{ mb: 1 }}>
+    <Box sx={{ backgroundColor: "#f5f5f5", minHeight: "100vh" }}>
+      {/* Top Navigation Bar */}
+      <AppBar position="sticky">
+        <Toolbar>
+          <IconButton
+            color="inherit"
+            onClick={() => navigate("/products")}
+            sx={{ mr: 2 }}
+          >
             <ArrowBackIcon />
           </IconButton>
+
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+            Product Details
+          </Typography>
+
+          {/* User Info */}
+          {userInfo && (
+            <Chip
+              icon={<PersonIcon />}
+              label={userInfo.username}
+              color="secondary"
+              sx={{ mr: 2 }}
+            />
+          )}
+
+          {/* AI Chatbot Button */}
+          <IconButton
+            color="inherit"
+            onClick={() => setChatbotOpen(true)}
+            sx={{ mr: 1 }}
+          >
+            <ChatIcon />
+          </IconButton>
+
+          {/* Shopping Cart Icon */}
+          <IconButton color="inherit" onClick={() => navigate("/cart")}>
+            <ShoppingCartIcon />
+          </IconButton>
+        </Toolbar>
+      </AppBar>
+
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        {/* Breadcrumb Navigation */}
+        <Box sx={{ mb: 3 }}>
           <Breadcrumbs aria-label="breadcrumb">
             <Link
               underline="hover"
@@ -183,7 +230,7 @@ function ProductDetail() {
 
         <Paper elevation={2} sx={{ p: 4 }}>
           <Grid container spacing={4}>
-            {/* Left Side - Main Image Only */}
+            {/* Left Side - Main Image */}
             <Grid item xs={12} md={6}>
               <Box
                 sx={{
@@ -195,12 +242,12 @@ function ProductDetail() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
+                  border: "1px solid #e0e0e0",
                 }}
               >
                 <img
                   src={
-                    "http://localhost:3000" + product.image ||
-                    product.imagePath ||
+                    "http://localhost:3000" + product.imagePath ||
                     "https://via.placeholder.com/600x600?text=No+Image"
                   }
                   alt={product.name}
@@ -220,94 +267,39 @@ function ProductDetail() {
                 {product.name}
               </Typography>
 
-              {/* Rating and Reviews */}
-              <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
-                <Rating value={4.5} precision={0.5} readOnly size="small" />
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ ml: 1 }}
-                >
-                  (24 reviews)
-                </Typography>
+              {/* Status Chip */}
+              <Box sx={{ mb: 3 }}>
+                <Chip
+                  label={product.isOnSale ? "Available" : "Sold Out"}
+                  color={product.isOnSale ? "success" : "error"}
+                  size="medium"
+                />
               </Box>
 
               {/* Price */}
-              <Box sx={{ mb: 3 }}>
+              <Box sx={{ mb: 4 }}>
                 <Typography variant="h3" color="error" fontWeight="bold">
                   ${product.price?.toLocaleString() || product.price}
                 </Typography>
-                {product.originalPrice && (
-                  <>
-                    <Typography
-                      variant="h6"
-                      color="text.secondary"
-                      sx={{ textDecoration: "line-through" }}
-                    >
-                      ${product.originalPrice.toLocaleString()}
-                    </Typography>
-                    <Chip
-                      label={`Save ${Math.round(
-                        ((product.originalPrice - product.price) /
-                          product.originalPrice) *
-                          100
-                      )}%`}
-                      color="success"
-                      size="small"
-                      sx={{ ml: 1 }}
-                    />
-                  </>
-                )}
               </Box>
 
               <Divider sx={{ mb: 3 }} />
 
               {/* Description */}
-              <Typography variant="h6" gutterBottom>
-                Description
-              </Typography>
-              <Typography variant="body1" paragraph color="text.secondary">
-                {product.description}
-              </Typography>
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="h6" gutterBottom fontWeight="600">
+                  Description
+                </Typography>
+                <Typography variant="body1" color="text.secondary">
+                  {product.description || "No description available"}
+                </Typography>
+              </Box>
 
               <Divider sx={{ mb: 3 }} />
 
-              {/* Specifications */}
-              {product.specifications &&
-                Object.keys(product.specifications).length > 0 && (
-                  <>
-                    <Typography variant="h6" gutterBottom>
-                      Specifications
-                    </Typography>
-                    <Box sx={{ mb: 3 }}>
-                      {Object.entries(product.specifications).map(
-                        ([key, value]) => (
-                          <Box
-                            key={key}
-                            sx={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              py: 1,
-                              borderBottom: "1px solid #eee",
-                            }}
-                          >
-                            <Typography variant="body2" fontWeight="500">
-                              {key}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {value}
-                            </Typography>
-                          </Box>
-                        )
-                      )}
-                    </Box>
-                    <Divider sx={{ mb: 3 }} />
-                  </>
-                )}
-
               {/* Quantity Selector */}
               <Box sx={{ mb: 3 }}>
-                <Typography variant="body2" gutterBottom>
+                <Typography variant="body1" gutterBottom fontWeight="500">
                   Quantity
                 </Typography>
                 <TextField
@@ -321,7 +313,8 @@ function ProductDetail() {
                     inputProps: { min: 1, max: 10 },
                   }}
                   size="small"
-                  sx={{ width: 100 }}
+                  sx={{ width: 120 }}
+                  disabled={!product.isOnSale}
                 />
               </Box>
 
@@ -333,18 +326,18 @@ function ProductDetail() {
                   fullWidth
                   startIcon={<ShoppingCartIcon />}
                   onClick={handleAddToCart}
+                  disabled={!product.isOnSale}
+                  sx={{ height: 56 }}
                 >
                   Add to Cart
                 </Button>
-                <Button
-                  variant="outlined"
-                  size="large"
-                  fullWidth
-                  onClick={handleBuyNow}
-                >
-                  Buy Now
-                </Button>
               </Box>
+
+              {!product.isOnSale && (
+                <Alert severity="warning" sx={{ mb: 3 }}>
+                  This product is currently sold out.
+                </Alert>
+              )}
 
               {/* Share Button */}
               <Button
@@ -352,8 +345,9 @@ function ProductDetail() {
                 startIcon={<ShareIcon />}
                 onClick={handleShare}
                 fullWidth
+                sx={{ height: 48 }}
               >
-                Share
+                Share Product
               </Button>
 
               <Divider sx={{ my: 3 }} />
@@ -361,34 +355,20 @@ function ProductDetail() {
               {/* Seller Info */}
               <Card variant="outlined">
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <Typography variant="h6" gutterBottom fontWeight="600">
                     Seller Information
                   </Typography>
                   <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <Avatar sx={{ mr: 2 }}>
+                    <Avatar sx={{ mr: 2, bgcolor: "primary.main" }}>
                       <PersonIcon />
                     </Avatar>
                     <Box>
                       <Typography variant="body1" fontWeight="500">
-                        {product.sellerName || "Anonymous Seller"}
+                        Seller ID: {product.sellerId}
                       </Typography>
-                      {product.sellerRating && (
-                        <Box sx={{ display: "flex", alignItems: "center" }}>
-                          <Rating
-                            value={product.sellerRating}
-                            precision={0.1}
-                            readOnly
-                            size="small"
-                          />
-                          <Typography
-                            variant="body2"
-                            color="text.secondary"
-                            sx={{ ml: 0.5 }}
-                          >
-                            ({product.sellerRating})
-                          </Typography>
-                        </Box>
-                      )}
+                      <Typography variant="body2" color="text.secondary">
+                        Contact seller for more information
+                      </Typography>
                     </Box>
                   </Box>
                 </CardContent>
@@ -413,6 +393,9 @@ function ProductDetail() {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      {/* AI Chatbot */}
+      <Chatbot open={chatbotOpen} onClose={() => setChatbotOpen(false)} />
     </Box>
   );
 }

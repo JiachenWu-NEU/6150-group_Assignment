@@ -34,63 +34,25 @@ export const getProducts = async (filters = {}) => {
 // 获取单个商品详情
 export const getProductById = async (productId) => {
   try {
-    // 先获取所有商品
-    const response = await request("/product/all");
-    const products = response.data || response;
+    const response = await request(`/product/detail/${productId}`);
 
-    // 在所有商品中找到对应的商品
-    const product = products.find(
-      (p) =>
-        String(p.id) === String(productId) ||
-        String(p._id) === String(productId)
-    );
-
-    if (!product) {
-      return {
-        success: false,
-        data: null,
-      };
-    }
-
-    // 转换数据格式，添加详情页需要的字段
-    const detailedProduct = {
-      id: product.id || product._id,
-      sellerId: product.sellerId,
-      sellerName: product.sellerName || "Anonymous Seller",
-      sellerRating: product.sellerRating || 4.5,
-      name: product.name,
-      price: product.price,
-      originalPrice: product.originalPrice || null,
-      image:
-        product.imagePath ||
-        product.image ||
-        "https://via.placeholder.com/600x600?text=No+Image",
-      // 如果后端没有多张图片，就用同一张图片
-      images: product.images || [
-        product.imagePath ||
-          "https://via.placeholder.com/600x600?text=Product+Image",
-        product.imagePath ||
-          "https://via.placeholder.com/600x600?text=Product+Image",
-        product.imagePath ||
-          "https://via.placeholder.com/600x600?text=Product+Image",
-        product.imagePath ||
-          "https://via.placeholder.com/600x600?text=Product+Image",
-      ],
-      description: product.description || "No description available",
-      condition: product.condition || "Good",
-      category: product.category || "General",
-      location: product.location || "Unknown Location",
-      isOnSale: product.isOnSale,
-      createdAt: product.createdAt || new Date().toISOString(),
-      specifications: product.specifications || {
-        Status: product.isOnSale ? "Available" : "Sold Out",
-        "Seller ID": product.sellerId,
-      },
-    };
+    // 后端返回格式：
+    // {
+    //   "message": "string",
+    //   "data": {
+    //     "id": "string",
+    //     "sellerId": "string",
+    //     "name": "string",
+    //     "price": 0,
+    //     "imagePath": "string",
+    //     "description": "string",
+    //     "isOnSale": true
+    //   }
+    // }
 
     return {
       success: true,
-      data: detailedProduct,
+      data: response.data || response,
     };
   } catch (error) {
     console.error("Failed to fetch product details:", error);
