@@ -23,7 +23,6 @@ import {
 import {
   ShoppingCart as ShoppingCartIcon,
   Share as ShareIcon,
-  LocationOn as LocationOnIcon,
   Person as PersonIcon,
   ArrowBack as ArrowBackIcon,
 } from "@mui/icons-material";
@@ -37,7 +36,6 @@ function ProductDetail() {
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [userInfo, setUserInfo] = useState(null);
 
@@ -80,13 +78,22 @@ function ProductDetail() {
   };
 
   // Add to cart
+  // Add to cart
   const handleAddToCart = async () => {
     try {
-      console.log("Adding to cart:", product.id, "quantity:", quantity);
-      showSnackbar(`Added ${quantity} item(s) to cart!`, "success");
+      const response = await addToCart(product.id, quantity);
+
+      if (response.success) {
+        showSnackbar(
+          `Added ${quantity} item(s) to cart successfully!`,
+          "success"
+        );
+      } else {
+        showSnackbar(response.message || "Failed to add to cart", "error");
+      }
     } catch (error) {
       console.error("Failed to add to cart:", error);
-      showSnackbar("Failed to add to cart", "error");
+      showSnackbar("Failed to add to cart. Please try again.", "error");
     }
   };
 
@@ -176,14 +183,12 @@ function ProductDetail() {
 
         <Paper elevation={2} sx={{ p: 4 }}>
           <Grid container spacing={4}>
-            {/* Left Side - Images */}
+            {/* Left Side - Main Image Only */}
             <Grid item xs={12} md={6}>
-              {/* Main Image */}
               <Box
                 sx={{
                   width: "100%",
-                  height: 400,
-                  mb: 2,
+                  height: 500,
                   borderRadius: 2,
                   overflow: "hidden",
                   backgroundColor: "#fff",
@@ -194,7 +199,8 @@ function ProductDetail() {
               >
                 <img
                   src={
-                    product.images?.[selectedImage] ||
+                    "http://localhost:3000" + product.image ||
+                    product.imagePath ||
                     "https://via.placeholder.com/600x600?text=No+Image"
                   }
                   alt={product.name}
@@ -205,43 +211,6 @@ function ProductDetail() {
                   }}
                 />
               </Box>
-
-              {/* Thumbnail Images */}
-              {product.images && product.images.length > 0 && (
-                <Grid container spacing={1}>
-                  {product.images.map((image, index) => (
-                    <Grid item xs={3} key={index}>
-                      <Box
-                        onClick={() => setSelectedImage(index)}
-                        sx={{
-                          width: "100%",
-                          height: 80,
-                          borderRadius: 1,
-                          overflow: "hidden",
-                          cursor: "pointer",
-                          border:
-                            selectedImage === index
-                              ? "2px solid #1976d2"
-                              : "2px solid transparent",
-                          "&:hover": {
-                            opacity: 0.8,
-                          },
-                        }}
-                      >
-                        <img
-                          src={image}
-                          alt={`${product.name} ${index + 1}`}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                          }}
-                        />
-                      </Box>
-                    </Grid>
-                  ))}
-                </Grid>
-              )}
             </Grid>
 
             {/* Right Side - Product Info */}
@@ -252,7 +221,7 @@ function ProductDetail() {
               </Typography>
 
               {/* Rating and Reviews */}
-              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+              <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
                 <Rating value={4.5} precision={0.5} readOnly size="small" />
                 <Typography
                   variant="body2"
@@ -290,33 +259,6 @@ function ProductDetail() {
                   </>
                 )}
               </Box>
-
-              {/* Condition and Category */}
-              <Box sx={{ display: "flex", gap: 1, mb: 3 }}>
-                {product.condition && (
-                  <Chip
-                    label={`Condition: ${product.condition}`}
-                    color="primary"
-                  />
-                )}
-                {product.category && (
-                  <Chip label={product.category} variant="outlined" />
-                )}
-              </Box>
-
-              {/* Location */}
-              {product.location && (
-                <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
-                  <LocationOnIcon fontSize="small" color="action" />
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ ml: 0.5 }}
-                  >
-                    {product.location}
-                  </Typography>
-                </Box>
-              )}
 
               <Divider sx={{ mb: 3 }} />
 

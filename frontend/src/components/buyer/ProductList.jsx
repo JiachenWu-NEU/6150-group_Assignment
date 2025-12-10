@@ -25,12 +25,12 @@ import {
   Search as SearchIcon,
   Person as PersonIcon,
   Logout as LogoutIcon,
-  Chat as ChatIcon,  // ← 添加这行
+  Chat as ChatIcon,
 } from "@mui/icons-material";
 import { getUserInfo, logout } from "../../utils/auth";
 import { getProducts, addToCart } from "../../services/buyerApi";
 import { useNavigate } from "react-router-dom";
-import Chatbot from "./Chatbot";  // ← 添加这行
+import Chatbot from "./Chatbot";
 
 function ProductList() {
   const navigate = useNavigate();
@@ -40,7 +40,7 @@ function ProductList() {
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [userInfo, setUserInfo] = useState(null);
   const [cartCount, setCartCount] = useState(0);
-  const [chatbotOpen, setChatbotOpen] = useState(false);  // ← 添加这行
+  const [chatbotOpen, setChatbotOpen] = useState(false);
 
   // Snackbar state
   const [snackbar, setSnackbar] = useState({
@@ -123,9 +123,17 @@ function ProductList() {
   // Add to cart
   const handleAddToCart = async (productId) => {
     try {
-      await addToCart(productId, 1);
-      setCartCount(cartCount + 1);
-      showSnackbar("Added to cart successfully!", "success");
+      const response = await addToCart(productId, 1);
+
+      if (response.success) {
+        setCartCount(cartCount + 1);
+        showSnackbar(
+          response.message || "Added to cart successfully!",
+          "success"
+        );
+      } else {
+        showSnackbar(response.message || "Failed to add to cart", "error");
+      }
     } catch (error) {
       console.error("Failed to add to cart:", error);
       showSnackbar("Failed to add to cart. Please try again.", "error");
@@ -269,7 +277,7 @@ function ProductList() {
                   <CardMedia
                     component="img"
                     height="200"
-                    image={product.image}
+                    image={"http://localhost:3000" + product.image}
                     alt={product.name}
                     sx={{ objectFit: "cover", cursor: "pointer" }}
                     onClick={() => handleViewDetails(product.id)}

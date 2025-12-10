@@ -137,30 +137,140 @@ export const searchProducts = async (keyword) => {
 
 // 获取购物车
 export const getCart = async () => {
-  return request("/cart");
+  try {
+    const response = await request("/cart/my");
+    // 后端返回格式：
+    // {
+    //   "message": "string",
+    //   "data": [
+    //     {
+    //       "id": "string",
+    //       "productId": "string",
+    //       "productName": "string",
+    //       "price": 0,
+    //       "imagePath": "string",
+    //       "quantity": 0
+    //     }
+    //   ]
+    // }
+    return {
+      success: true,
+      data: response.data || [],
+    };
+  } catch (error) {
+    console.error("Failed to fetch cart:", error);
+    return {
+      success: false,
+      data: [],
+    };
+  }
 };
 
 // 添加到购物车
 export const addToCart = async (productId, quantity = 1) => {
-  return request("/cart", {
-    method: "POST",
-    body: JSON.stringify({ productId, quantity }),
-  });
+  try {
+    const response = await request("/cart/add", {
+      method: "POST",
+      body: JSON.stringify({
+        productId: productId,
+        quantity: quantity,
+      }),
+    });
+
+    // 后端返回格式：
+    // {
+    //   "message": "string",
+    //   "data": {
+    //     "id": "string",
+    //     "buyerId": "string",
+    //     "productId": "string",
+    //     "quantity": 0
+    //   }
+    // }
+
+    return {
+      success: true,
+      data: response.data || response,
+      message: response.message || "Product added to cart successfully",
+    };
+  } catch (error) {
+    console.error("Failed to add to cart:", error);
+    return {
+      success: false,
+      message: error.message || "Failed to add to cart",
+    };
+  }
 };
 
 // 更新购物车商品数量
-export const updateCartItem = async (cartItemId, quantity) => {
-  return request(`/cart/${cartItemId}`, {
-    method: "PATCH",
-    body: JSON.stringify({ quantity }),
-  });
+export const updateCartItem = async (productId, quantity) => {
+  try {
+    const response = await request("/cart/update", {
+      method: "PATCH",
+      body: JSON.stringify({
+        productId: productId,
+        quantity: quantity,
+      }),
+    });
+
+    // 后端返回格式：
+    // {
+    //   "message": "string",
+    //   "data": {
+    //     "id": "string",
+    //     "buyerId": "string",
+    //     "productId": "string",
+    //     "quantity": 0
+    //   }
+    // }
+
+    return {
+      success: true,
+      data: response.data || response,
+      message: response.message || "Cart updated successfully",
+    };
+  } catch (error) {
+    console.error("Failed to update cart:", error);
+    return {
+      success: false,
+      message: error.message || "Failed to update cart",
+    };
+  }
 };
 
 // 删除购物车商品
-export const removeFromCart = async (cartItemId) => {
-  return request(`/cart/${cartItemId}`, {
-    method: "DELETE",
-  });
+export const removeFromCart = async (productId) => {
+  try {
+    const response = await request("/cart/remove", {
+      method: "DELETE",
+      body: JSON.stringify({
+        productId: productId,
+      }),
+    });
+
+    // 后端返回格式：
+    // {
+    //   "message": "string",
+    //   "data": {
+    //     "id": "string",
+    //     "buyerId": "string",
+    //     "productId": "string",
+    //     "quantity": 0
+    //   }
+    // }
+
+    return {
+      success: true,
+      data: response.data || response,
+      message: response.message || "Product removed from cart",
+    };
+  } catch (error) {
+    console.error("Failed to remove from cart:", error);
+    return {
+      success: false,
+      message: error.message || "Failed to remove from cart",
+    };
+  }
 };
 
 // 清空购物车
