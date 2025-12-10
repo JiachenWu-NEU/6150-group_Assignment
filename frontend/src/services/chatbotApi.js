@@ -1,5 +1,4 @@
-const OPENA
-"; // ← 替换成你的 API Key
+const OPENAI_API_KEY = 'your-openai-api-key-here';
 
 export const sendMessageToAI = async (message, conversationHistory = []) => {
   try {
