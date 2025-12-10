@@ -3,45 +3,43 @@ import {
   Container,
   Box,
   Typography,
-  Button,
   Paper,
   Grid,
-  IconButton,
-  Divider,
-  TextField,
   Card,
-  CardContent,
   CardMedia,
-  Snackbar,
-  Alert,
-  CircularProgress,
+  CardContent,
+  IconButton,
+  Button,
   Checkbox,
+  Divider,
   AppBar,
   Toolbar,
   Chip,
+  Alert,
+  Snackbar,
+  CircularProgress,
 } from "@mui/material";
 import {
-  Delete as DeleteIcon,
   Add as AddIcon,
   Remove as RemoveIcon,
-  ShoppingCart as ShoppingCartIcon,
+  Delete as DeleteIcon,
   ArrowBack as ArrowBackIcon,
+  ShoppingCart as ShoppingCartIcon,
   Person as PersonIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import {
-  mockGetCart,
-  mockUpdateCartItem,
-  mockRemoveFromCart,
-  mockClearCart,
+  getCart,
+  updateCartItem,
+  removeFromCart,
 } from "../../services/buyerApi";
 import { getUserInfo } from "../../utils/auth";
 
 function Cart() {
   const navigate = useNavigate();
   const [cartItems, setCartItems] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [selectedItems, setSelectedItems] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [userInfo, setUserInfo] = useState(null);
 
   // Snackbar state
@@ -66,7 +64,7 @@ function Cart() {
     }
   }, []);
 
-  // Fetch cart items
+  // Fetch cart
   useEffect(() => {
     fetchCart();
   }, []);
@@ -74,15 +72,25 @@ function Cart() {
   const fetchCart = async () => {
     try {
       setLoading(true);
-      const response = await mockGetCart();
+      const response = await getCart();
 
-      if (response.success && response.data.items) {
-        setCartItems(response.data.items);
-        // Auto-select all available items
-        const availableItemIds = response.data.items
-          .filter((item) => item.isAvailable)
-          .map((item) => item.id);
-        setSelectedItems(availableItemIds);
+      if (response.success && response.data) {
+        // 转换后端数据格式
+        const transformedItems = response.data.map((item) => ({
+          id: item.id,
+          productId: item.productId,
+          productName: item.productName,
+          price: item.price,
+          quantity: item.quantity,
+          image:
+            "http://localhost:3000" + item.imagePath ||
+            "https://via.placeholder.com/100x100?text=Product",
+          isAvailable: true,
+        }));
+
+        setCartItems(transformedItems);
+        // 默认选中所有商品
+        setSelectedItems(transformedItems.map((item) => item.productId));
       }
     } catch (error) {
       console.error("Failed to fetch cart:", error);
@@ -92,49 +100,84 @@ function Cart() {
     }
   };
 
-  // Update item quantity
-  const handleUpdateQuantity = async (cartItemId, newQuantity) => {
-    if (newQuantity < 1) return;
+  // Toggle item selection
+  const handleToggleItem = (productId) => {
+    setSelectedItems((prev) =>
+      prev.includes(productId)
+        ? prev.filter((id) => id !== productId)
+        : [...prev, productId]
+    );
+  };
 
-    try {
-      // Optimistic update
-      setCartItems((prevItems) =>
-        prevItems.map((item) =>
-          item.id === cartItemId ? { ...item, quantity: newQuantity } : item
-        )
-      );
-
-      await mockUpdateCartItem(cartItemId, newQuantity);
-      showSnackbar("Cart updated", "success");
-    } catch (error) {
-      console.error("Failed to update cart:", error);
-      showSnackbar("Failed to update cart", "error");
-      fetchCart(); // Reload cart on error
+  // Select all / Deselect all
+  const handleToggleAll = () => {
+    if (selectedItems.length === cartItems.length) {
+      setSelectedItems([]);
+    } else {
+      setSelectedItems(cartItems.map((item) => item.productId));
     }
   };
 
-  // Remove item from cart
-  const handleRemoveItem = async (cartItemId) => {
+  // Update quantity
+  const handleUpdateQuantity = async (productId, newQuantity) => {
+    if (newQuantity < 1) return;
+
     try {
-      await mockRemoveFromCart(cartItemId);
+      // 乐观更新UI
       setCartItems((prevItems) =>
-        prevItems.filter((item) => item.id !== cartItemId)
+        prevItems.map((item) =>
+          item.productId === productId
+            ? { ...item, quantity: newQuantity }
+            : item
+        )
       );
-      setSelectedItems((prevSelected) =>
-        prevSelected.filter((id) => id !== cartItemId)
-      );
-      showSnackbar("Item removed from cart", "success");
+
+      const response = await updateCartItem(productId, newQuantity);
+
+      if (response.success) {
+        showSnackbar("Cart updated", "success");
+      } else {
+        showSnackbar(response.message || "Failed to update cart", "error");
+        // 如果失败，重新获取购物车数据
+        fetchCart();
+      }
+    } catch (error) {
+      console.error("Failed to update cart:", error);
+      showSnackbar("Failed to update cart", "error");
+      fetchCart();
+    }
+  };
+
+  // Remove item
+  const handleRemoveItem = async (productId) => {
+    try {
+      const response = await removeFromCart(productId);
+
+      if (response.success) {
+        setCartItems((prevItems) =>
+          prevItems.filter((item) => item.productId !== productId)
+        );
+        setSelectedItems((prevSelected) =>
+          prevSelected.filter((id) => id !== productId)
+        );
+        showSnackbar("Item removed from cart", "success");
+      } else {
+        showSnackbar(response.message || "Failed to remove item", "error");
+      }
     } catch (error) {
       console.error("Failed to remove item:", error);
       showSnackbar("Failed to remove item", "error");
     }
   };
 
-  // Clear entire cart
+  // Clear cart (暂时没有后端接口，可以通过删除所有商品实现)
   const handleClearCart = async () => {
     if (window.confirm("Are you sure you want to clear your cart?")) {
       try {
-        await mockClearCart();
+        // 逐个删除所有商品
+        for (const item of cartItems) {
+          await removeFromCart(item.productId);
+        }
         setCartItems([]);
         setSelectedItems([]);
         showSnackbar("Cart cleared", "success");
@@ -145,45 +188,6 @@ function Cart() {
     }
   };
 
-  // Toggle item selection
-  const handleToggleItem = (itemId) => {
-    setSelectedItems((prevSelected) => {
-      if (prevSelected.includes(itemId)) {
-        return prevSelected.filter((id) => id !== itemId);
-      } else {
-        return [...prevSelected, itemId];
-      }
-    });
-  };
-
-  // Toggle select all
-  const handleToggleSelectAll = () => {
-    const availableItemIds = cartItems
-      .filter((item) => item.isAvailable)
-      .map((item) => item.id);
-
-    if (selectedItems.length === availableItemIds.length) {
-      setSelectedItems([]);
-    } else {
-      setSelectedItems(availableItemIds);
-    }
-  };
-
-  // Calculate totals
-  const calculateSubtotal = () => {
-    return cartItems
-      .filter((item) => selectedItems.includes(item.id))
-      .reduce((total, item) => total + item.price * item.quantity, 0);
-  };
-
-  const calculateTax = () => {
-    return calculateSubtotal() * 0.1; // 10% tax
-  };
-
-  const calculateTotal = () => {
-    return calculateSubtotal() + calculateTax();
-  };
-
   // Proceed to checkout
   const handleCheckout = () => {
     if (selectedItems.length === 0) {
@@ -191,19 +195,22 @@ function Cart() {
       return;
     }
 
-    const selectedCartItems = cartItems.filter((item) =>
-      selectedItems.includes(item.id)
+    const selectedProducts = cartItems.filter((item) =>
+      selectedItems.includes(item.productId)
     );
-
-    navigate("/checkout", {
-      state: {
-        cartItems: selectedCartItems,
-        subtotal: calculateSubtotal(),
-        tax: calculateTax(),
-        total: calculateTotal(),
-      },
-    });
+    navigate("/checkout", { state: { items: selectedProducts } });
   };
+
+  // Calculate totals
+  const calculateSubtotal = () => {
+    return cartItems
+      .filter((item) => selectedItems.includes(item.productId))
+      .reduce((sum, item) => sum + item.price * item.quantity, 0);
+  };
+
+  const subtotal = calculateSubtotal();
+  const tax = subtotal * 0.1; // 10% tax
+  const total = subtotal + tax;
 
   // Show snackbar
   const showSnackbar = (message, severity = "success") => {
@@ -258,7 +265,7 @@ function Cart() {
 
       <Container maxWidth="lg" sx={{ py: 4 }}>
         {cartItems.length === 0 ? (
-          // Empty Cart
+          // Empty Cart State
           <Paper
             elevation={2}
             sx={{
@@ -278,7 +285,7 @@ function Cart() {
               Your cart is empty
             </Typography>
             <Typography variant="body1" color="text.secondary" paragraph>
-              Add some items to get started!
+              Add some products to get started!
             </Typography>
             <Button
               variant="contained"
@@ -291,46 +298,38 @@ function Cart() {
           </Paper>
         ) : (
           <Grid container spacing={3}>
-            {/* Left Side - Cart Items */}
+            {/* Cart Items */}
             <Grid item xs={12} md={8}>
               <Paper elevation={2} sx={{ p: 3 }}>
-                {/* Header with Select All */}
+                {/* Select All */}
                 <Box
                   sx={{
                     display: "flex",
-                    justifyContent: "space-between",
                     alignItems: "center",
+                    justifyContent: "space-between",
                     mb: 2,
                   }}
                 >
                   <Box sx={{ display: "flex", alignItems: "center" }}>
                     <Checkbox
-                      checked={
-                        selectedItems.length ===
-                          cartItems.filter((item) => item.isAvailable).length &&
-                        cartItems.length > 0
-                      }
-                      onChange={handleToggleSelectAll}
+                      checked={selectedItems.length === cartItems.length}
                       indeterminate={
                         selectedItems.length > 0 &&
-                        selectedItems.length <
-                          cartItems.filter((item) => item.isAvailable).length
+                        selectedItems.length < cartItems.length
                       }
+                      onChange={handleToggleAll}
                     />
-                    <Typography variant="h6">
+                    <Typography variant="body1" fontWeight="500">
                       Select All ({cartItems.length} items)
                     </Typography>
                   </Box>
-
-                  {cartItems.length > 0 && (
-                    <Button
-                      color="error"
-                      startIcon={<DeleteIcon />}
-                      onClick={handleClearCart}
-                    >
-                      Clear Cart
-                    </Button>
-                  )}
+                  <Button
+                    color="error"
+                    startIcon={<DeleteIcon />}
+                    onClick={handleClearCart}
+                  >
+                    Clear Cart
+                  </Button>
                 </Box>
 
                 <Divider sx={{ mb: 2 }} />
@@ -338,13 +337,10 @@ function Cart() {
                 {/* Cart Items List */}
                 {cartItems.map((item) => (
                   <Card
-                    key={item.id}
+                    key={item.productId}
                     sx={{
                       mb: 2,
                       opacity: item.isAvailable ? 1 : 0.6,
-                      border: selectedItems.includes(item.id)
-                        ? "2px solid #1976d2"
-                        : "1px solid #e0e0e0",
                     }}
                   >
                     <CardContent>
@@ -352,8 +348,8 @@ function Cart() {
                         {/* Checkbox */}
                         <Grid item>
                           <Checkbox
-                            checked={selectedItems.includes(item.id)}
-                            onChange={() => handleToggleItem(item.id)}
+                            checked={selectedItems.includes(item.productId)}
+                            onChange={() => handleToggleItem(item.productId)}
                             disabled={!item.isAvailable}
                           />
                         </Grid>
@@ -365,47 +361,19 @@ function Cart() {
                             image={item.image}
                             alt={item.productName}
                             sx={{
-                              width: 80,
-                              height: 80,
+                              width: 100,
+                              height: 100,
                               objectFit: "cover",
                               borderRadius: 1,
-                              cursor: "pointer",
                             }}
-                            onClick={() =>
-                              navigate(`/product/${item.productId}`)
-                            }
                           />
                         </Grid>
 
                         {/* Product Info */}
                         <Grid item xs>
-                          <Typography
-                            variant="h6"
-                            sx={{
-                              cursor: "pointer",
-                              "&:hover": { color: "primary.main" },
-                            }}
-                            onClick={() =>
-                              navigate(`/product/${item.productId}`)
-                            }
-                          >
+                          <Typography variant="h6" gutterBottom>
                             {item.productName}
                           </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            Seller: {item.sellerName}
-                          </Typography>
-                          {!item.isAvailable && (
-                            <Chip
-                              label="Out of Stock"
-                              color="error"
-                              size="small"
-                              sx={{ mt: 1 }}
-                            />
-                          )}
-                        </Grid>
-
-                        {/* Price */}
-                        <Grid item>
                           <Typography
                             variant="h6"
                             color="error"
@@ -413,6 +381,13 @@ function Cart() {
                           >
                             ${item.price.toLocaleString()}
                           </Typography>
+                          {!item.isAvailable && (
+                            <Chip
+                              label="Out of Stock"
+                              color="error"
+                              size="small"
+                            />
+                          )}
                         </Grid>
 
                         {/* Quantity Controls */}
@@ -421,64 +396,50 @@ function Cart() {
                             sx={{
                               display: "flex",
                               alignItems: "center",
-                              border: "1px solid #e0e0e0",
-                              borderRadius: 1,
+                              gap: 1,
                             }}
                           >
                             <IconButton
                               size="small"
                               onClick={() =>
-                                handleUpdateQuantity(item.id, item.quantity - 1)
+                                handleUpdateQuantity(
+                                  item.productId,
+                                  item.quantity - 1
+                                )
                               }
-                              disabled={item.quantity <= 1 || !item.isAvailable}
+                              disabled={item.quantity <= 1}
                             >
-                              <RemoveIcon fontSize="small" />
+                              <RemoveIcon />
                             </IconButton>
-                            <TextField
-                              value={item.quantity}
-                              onChange={(e) => {
-                                const value = parseInt(e.target.value);
-                                if (value > 0) {
-                                  handleUpdateQuantity(item.id, value);
-                                }
+                            <Typography
+                              variant="body1"
+                              sx={{
+                                minWidth: 40,
+                                textAlign: "center",
+                                fontWeight: "bold",
                               }}
-                              disabled={!item.isAvailable}
-                              inputProps={{
-                                style: { textAlign: "center", width: "40px" },
-                                min: 1,
-                                max: 10,
-                              }}
-                              variant="standard"
-                              InputProps={{
-                                disableUnderline: true,
-                              }}
-                            />
+                            >
+                              {item.quantity}
+                            </Typography>
                             <IconButton
                               size="small"
                               onClick={() =>
-                                handleUpdateQuantity(item.id, item.quantity + 1)
-                              }
-                              disabled={
-                                item.quantity >= 10 || !item.isAvailable
+                                handleUpdateQuantity(
+                                  item.productId,
+                                  item.quantity + 1
+                                )
                               }
                             >
-                              <AddIcon fontSize="small" />
+                              <AddIcon />
                             </IconButton>
                           </Box>
                         </Grid>
 
-                        {/* Subtotal */}
-                        <Grid item>
-                          <Typography variant="h6" fontWeight="bold">
-                            ${(item.price * item.quantity).toLocaleString()}
-                          </Typography>
-                        </Grid>
-
-                        {/* Delete Button */}
+                        {/* Remove Button */}
                         <Grid item>
                           <IconButton
                             color="error"
-                            onClick={() => handleRemoveItem(item.id)}
+                            onClick={() => handleRemoveItem(item.productId)}
                           >
                             <DeleteIcon />
                           </IconButton>
@@ -490,7 +451,7 @@ function Cart() {
               </Paper>
             </Grid>
 
-            {/* Right Side - Order Summary */}
+            {/* Order Summary */}
             <Grid item xs={12} md={4}>
               <Paper elevation={2} sx={{ p: 3, position: "sticky", top: 80 }}>
                 <Typography variant="h5" gutterBottom fontWeight="bold">
@@ -499,77 +460,55 @@ function Cart() {
 
                 <Divider sx={{ my: 2 }} />
 
-                {/* Selected Items Count */}
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    mb: 1,
-                  }}
-                >
-                  <Typography variant="body1" color="text.secondary">
-                    Selected Items:
-                  </Typography>
-                  <Typography variant="body1" fontWeight="500">
-                    {selectedItems.length}
-                  </Typography>
-                </Box>
-
-                {/* Subtotal */}
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    mb: 1,
-                  }}
-                >
-                  <Typography variant="body1" color="text.secondary">
-                    Subtotal:
-                  </Typography>
-                  <Typography variant="body1" fontWeight="500">
-                    ${calculateSubtotal().toLocaleString()}
-                  </Typography>
-                </Box>
-
-                {/* Tax */}
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    mb: 1,
-                  }}
-                >
-                  <Typography variant="body1" color="text.secondary">
-                    Tax (10%):
-                  </Typography>
-                  <Typography variant="body1" fontWeight="500">
-                    ${calculateTax().toFixed(2)}
-                  </Typography>
-                </Box>
-
-                {/* Shipping */}
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    mb: 2,
-                  }}
-                >
-                  <Typography variant="body1" color="text.secondary">
-                    Shipping:
-                  </Typography>
-                  <Typography
-                    variant="body1"
-                    fontWeight="500"
-                    color="success.main"
+                <Box sx={{ mb: 2 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      mb: 1,
+                    }}
                   >
-                    FREE
-                  </Typography>
+                    <Typography variant="body1">
+                      Subtotal ({selectedItems.length} items)
+                    </Typography>
+                    <Typography variant="body1" fontWeight="500">
+                      ${subtotal.toFixed(2)}
+                    </Typography>
+                  </Box>
+
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      mb: 1,
+                    }}
+                  >
+                    <Typography variant="body1">Tax (10%)</Typography>
+                    <Typography variant="body1" fontWeight="500">
+                      ${tax.toFixed(2)}
+                    </Typography>
+                  </Box>
+
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      mb: 1,
+                    }}
+                  >
+                    <Typography variant="body1">Shipping</Typography>
+                    <Typography
+                      variant="body1"
+                      fontWeight="500"
+                      color="success.main"
+                    >
+                      FREE
+                    </Typography>
+                  </Box>
                 </Box>
 
                 <Divider sx={{ my: 2 }} />
 
-                {/* Total */}
                 <Box
                   sx={{
                     display: "flex",
@@ -578,31 +517,29 @@ function Cart() {
                   }}
                 >
                   <Typography variant="h6" fontWeight="bold">
-                    Total:
+                    Total
                   </Typography>
                   <Typography variant="h6" fontWeight="bold" color="error">
-                    ${calculateTotal().toFixed(2)}
+                    ${total.toFixed(2)}
                   </Typography>
                 </Box>
 
-                {/* Checkout Button */}
                 <Button
                   variant="contained"
                   size="large"
                   fullWidth
                   onClick={handleCheckout}
                   disabled={selectedItems.length === 0}
-                  sx={{ mb: 2 }}
                 >
-                  Proceed to Checkout ({selectedItems.length})
+                  Proceed to Checkout
                 </Button>
 
-                {/* Continue Shopping */}
                 <Button
                   variant="outlined"
                   size="large"
                   fullWidth
                   onClick={() => navigate("/products")}
+                  sx={{ mt: 2 }}
                 >
                   Continue Shopping
                 </Button>
