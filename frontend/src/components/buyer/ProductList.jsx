@@ -25,10 +25,12 @@ import {
   Search as SearchIcon,
   Person as PersonIcon,
   Logout as LogoutIcon,
+  Chat as ChatIcon,  // ← 添加这行
 } from "@mui/icons-material";
 import { getUserInfo, logout } from "../../utils/auth";
-import { mockGetProducts, addToCart } from "../../services/buyerApi";
+import { getProducts, addToCart } from "../../services/buyerApi";
 import { useNavigate } from "react-router-dom";
+import Chatbot from "./Chatbot";  // ← 添加这行
 
 function ProductList() {
   const navigate = useNavigate();
@@ -38,6 +40,7 @@ function ProductList() {
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [userInfo, setUserInfo] = useState(null);
   const [cartCount, setCartCount] = useState(0);
+  const [chatbotOpen, setChatbotOpen] = useState(false);  // ← 添加这行
 
   // Snackbar state
   const [snackbar, setSnackbar] = useState({
@@ -50,7 +53,6 @@ function ProductList() {
   useEffect(() => {
     const user = getUserInfo();
     if (!user) {
-      // navigate('/login');
       const mockUser = {
         id: "user123",
         username: "John Doe",
@@ -70,15 +72,35 @@ function ProductList() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await mockGetProducts();
+      const response = await getProducts();
 
-      if (response.success) {
-        setProducts(response.data);
-        setFilteredProducts(response.data);
+      if (response.success && response.data) {
+        const transformedProducts = response.data.map((product) => ({
+          id: product.id || product._id,
+          sellerId: product.sellerId,
+          name: product.name,
+          price: product.price,
+          image:
+            product.imagePath ||
+            product.image ||
+            "https://via.placeholder.com/300x300?text=No+Image",
+          description: product.description,
+          isOnSale: product.isOnSale,
+          createdAt: product.createdAt || new Date().toISOString(),
+        }));
+
+        setProducts(transformedProducts);
+        setFilteredProducts(transformedProducts);
+      } else {
+        showSnackbar("No products found", "info");
+        setProducts([]);
+        setFilteredProducts([]);
       }
     } catch (error) {
       console.error("Failed to fetch products:", error);
       showSnackbar("Failed to load products. Please try again later.", "error");
+      setProducts([]);
+      setFilteredProducts([]);
     } finally {
       setLoading(false);
     }
@@ -101,7 +123,7 @@ function ProductList() {
   // Add to cart
   const handleAddToCart = async (productId) => {
     try {
-      console.log("Adding product to cart:", productId);
+      await addToCart(productId, 1);
       setCartCount(cartCount + 1);
       showSnackbar("Added to cart successfully!", "success");
     } catch (error) {
@@ -163,6 +185,15 @@ function ProductList() {
             />
           )}
 
+          {/* AI Chatbot Button - 添加这个 */}
+          <IconButton
+            color="inherit"
+            onClick={() => setChatbotOpen(true)}
+            sx={{ mr: 1 }}
+          >
+            <ChatIcon />
+          </IconButton>
+
           {/* Shopping Cart Icon */}
           <IconButton
             color="inherit"
@@ -213,7 +244,11 @@ function ProductList() {
 
         {/* Product Grid */}
         {filteredProducts.length === 0 ? (
-          <Alert severity="info">No products found</Alert>
+          <Alert severity="info">
+            {searchTerm
+              ? "No products found matching your search"
+              : "No products available"}
+          </Alert>
         ) : (
           <Grid container spacing={3}>
             {filteredProducts.map((product) => (
@@ -277,13 +312,16 @@ function ProductList() {
 
                     {/* Price */}
                     <Typography variant="h5" color="error" fontWeight="bold">
-                      ${product.price.toLocaleString()}
+                      ${product.price?.toLocaleString() || product.price}
                     </Typography>
 
                     {/* Posted Date */}
-                    <Typography variant="caption" color="text.secondary">
-                      Posted: {product.createdAt}
-                    </Typography>
+                    {product.createdAt && (
+                      <Typography variant="caption" color="text.secondary">
+                        Posted:{" "}
+                        {new Date(product.createdAt).toLocaleDateString()}
+                      </Typography>
+                    )}
                   </CardContent>
 
                   {/* Action Buttons */}
@@ -328,6 +366,9 @@ function ProductList() {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      {/* AI Chatbot - 添加这个 */}
+      <Chatbot open={chatbotOpen} onClose={() => setChatbotOpen(false)} />
     </Box>
   );
 }

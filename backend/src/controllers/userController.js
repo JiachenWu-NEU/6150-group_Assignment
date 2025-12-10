@@ -7,7 +7,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "alitimig_jwt_secret";
 
 exports.register = async (req, res) => {
   try {
-    const { username, email, password, type, address, isAvailable } = req.body;
+    const { username, email, password, type, address, isAvailable } = req.body || {};
 
     if (!username || !email || !password || !type || !address) {
       return res.status(400).json({ error: "All fields are required." });
@@ -50,7 +50,7 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body || {};
 
     if (!email || !password) {
       return res.status(400).json({ error: "Email and password are required." });
@@ -91,7 +91,7 @@ exports.login = async (req, res) => {
 exports.updateUser = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { username, address } = req.body;
+    const { username, address } = req.body || {};
 
     if (!username && !address) {
       return res

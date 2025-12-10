@@ -28,7 +28,7 @@ import {
   ArrowBack as ArrowBackIcon,
 } from "@mui/icons-material";
 import { useNavigate, useParams } from "react-router-dom";
-import { mockGetProductById, addToCart } from "../../services/buyerApi";
+import { getProductById, addToCart } from "../../services/buyerApi";
 import { getUserInfo } from "../../utils/auth";
 
 function ProductDetail() {
@@ -63,7 +63,7 @@ function ProductDetail() {
   const fetchProductDetails = async () => {
     try {
       setLoading(true);
-      const response = await mockGetProductById(id);
+      const response = await getProductById(id);
 
       if (response.success && response.data) {
         setProduct(response.data);
