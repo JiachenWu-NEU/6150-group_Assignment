@@ -18,6 +18,11 @@ import SellerProductList from "./components/seller/SellerProductList";
 import AddProduct from "./components/seller/AddProduct";
 import SellerProfile from "./components/seller/SellerProfile";
 
+// 卖家页面
+import SellerProductList from "./components/seller/SellerProductList";
+import AddProduct from "./components/seller/AddProduct";
+import SellerProfile from "./components/seller/SellerProfile";
+
 // 导入管理员页面
 import AdminLayout from "./components/admin/AdminLayout";
 import ProductsPage from "./components/admin/ProductsPage";
