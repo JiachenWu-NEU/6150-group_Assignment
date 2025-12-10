@@ -91,6 +91,7 @@ exports.getMyOrders = async (req, res) => {
           imagePath: p?.imagePath,
           sellerId: i.sellerId,
           quantity: i.quantity,
+          price: p?.price,
         };
       }),
       createdAt: order.createdAt,
