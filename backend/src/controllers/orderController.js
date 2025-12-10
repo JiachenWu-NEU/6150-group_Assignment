@@ -75,17 +75,24 @@ exports.getMyOrders = async (req, res) => {
     }
 
     const orders = await Order.find({ buyerId: userId })
+      .populate("items.productId")
       .sort({ purchaseDate: -1 });
 
     const result = orders.map((order) => ({
       id: order._id,
       buyerId: order.buyerId,
       purchaseDate: order.purchaseDate,
-      items: order.items.map((i) => ({
-        productId: i.productId,
-        sellerId: i.sellerId,
-        quantity: i.quantity,
-      })),
+      items: order.items.map((i) => {
+        const p = i.productId;
+
+        return {
+          productId: p?._id || i.productId,
+          productName: p?.name,
+          imagePath: p?.imagePath,
+          sellerId: i.sellerId,
+          quantity: i.quantity,
+        };
+      }),
       createdAt: order.createdAt,
     }));
 

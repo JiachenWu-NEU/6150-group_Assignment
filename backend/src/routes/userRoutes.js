@@ -6,7 +6,7 @@ const { auth, adminOnly } = require("../utils/tokenResolver");
 
 /**
  * @openapi
- * /user/create:
+ * /user/register:
  *   post:
  *     summary: Create a new user
  *     tags:
