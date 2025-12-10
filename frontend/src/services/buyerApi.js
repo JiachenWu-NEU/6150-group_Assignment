@@ -283,36 +283,48 @@ export const clearCart = async () => {
 // ==================== 订单相关 ====================
 
 // 创建订单（结账）
-export const createOrder = async (orderData) => {
-  return request("/orders", {
-    method: "POST",
-    body: JSON.stringify(orderData),
-  });
+export const createOrder = async () => {
+  try {
+    const response = await request("/order/create", {
+      method: "POST",
+    });
+
+    // 后端返回格式：
+    // {
+    //   "message": "Order created successfully.",
+    //   "data": {
+    //     "id": "string",
+    //     "buyerId": "string",
+    //     "purchaseDate": "2025-12-10T19:12:11.869Z",
+    //     "items": [
+    //       {
+    //         "productId": "string",
+    //         "sellerId": "string",
+    //         "quantity": 2
+    //       }
+    //     ],
+    //     "createdAt": "2025-12-10T19:12:11.869Z"
+    //   }
+    // }
+
+    return {
+      success: true,
+      data: response.data || response,
+      message: response.message || "Order created successfully",
+    };
+  } catch (error) {
+    console.error("Failed to create order:", error);
+    return {
+      success: false,
+      message: error.message || "Failed to create order",
+    };
+  }
 };
 
 // 获取订单历史
 export const getOrderHistory = async () => {
   try {
     const response = await request("/order/my");
-    // 后端返回格式：
-    // {
-    //   "message": "string",
-    //   "data": [
-    //     {
-    //       "id": "string",
-    //       "buyerId": "string",
-    //       "purchaseDate": "2025-12-10T15:28:43.432Z",
-    //       "items": [
-    //         {
-    //           "productId": "string",
-    //           "sellerId": "string",
-    //           "quantity": 0
-    //         }
-    //       ],
-    //       "createdAt": "2025-12-10T15:28:43.432Z"
-    //     }
-    //   ]
-    // }
     return {
       success: true,
       data: response.data || response,
@@ -325,7 +337,6 @@ export const getOrderHistory = async () => {
     };
   }
 };
-
 // 获取单个订单详情
 export const getOrderById = async (orderId) => {
   try {
