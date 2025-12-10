@@ -19,6 +19,7 @@ import ProductList from "./components/buyer/ProductList";
 import ProductDetail from "./components/buyer/ProductDetail";
 import Cart from "./components/buyer/Cart";
 import OrderHistory from "./components/buyer/OrderHistory";
+import Checkout from "./components/buyer/Checkout";
 
 // 卖家页面
 import SellerProductList from "./components/seller/SellerProductList";
@@ -47,7 +48,6 @@ const theme = createTheme({
   },
 });
 
-
 function App() {
   return (
     <ThemeProvider theme={theme}>
@@ -55,7 +55,16 @@ function App() {
       <Router>
         <Routes>
           {/* landing login register路由 */}
-          <Route path="/" element={<> <Navbar/> <HeroSection /> <FeatureSection /><Footer /></>}/>
+          <Route
+            path="/"
+            element={
+              <>
+                {" "}
+                <Navbar /> <HeroSection /> <FeatureSection />
+                <Footer />
+              </>
+            }
+          />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/login" element={<LoginPage />} />
 
@@ -64,6 +73,7 @@ function App() {
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/orders" element={<OrderHistory />} />
+          <Route path="/checkout" element={<Checkout />} />
 
           {/* 卖家路由 */}
           <Route path="/seller/products" element={<SellerProductList />} />

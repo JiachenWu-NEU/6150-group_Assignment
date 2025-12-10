@@ -26,7 +26,7 @@ import {
   Schedule as ScheduleIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
-import { getOrderHistory } from "../../services/buyerApi"; 
+import { getOrderHistory } from "../../services/buyerApi";
 import { getUserInfo } from "../../utils/auth";
 
 function OrderHistory() {
@@ -271,7 +271,7 @@ function OrderHistory() {
                             <Box
                               component="img"
                               src={
-                                item.productImage ||
+                                "http://localhost:3000" + item.productImage ||
                                 "https://via.placeholder.com/80x80?text=Product"
                               }
                               alt={item.productName}
