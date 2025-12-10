@@ -1,14 +1,14 @@
-import { getAuthToken } from '../utils/auth';
+import { getAuthToken } from "../utils/auth";
 
-export const API_BASE_URL = 'http://localhost:5000/api'; // 后端基础URL
+export const API_BASE_URL = "http://localhost:3000"; // 后端基础URL
 
 // 通用请求函数 - 所有人都用这个
 export const request = async (url, options = {}) => {
   const token = getAuthToken();
-  
+
   const headers = {
-    'Content-Type': 'application/json',
-    ...(token && { 'Authorization': `Bearer ${token}` }),
+    "Content-Type": "application/json",
+    ...(token && { Authorization: `Bearer ${token}` }),
     ...options.headers,
   };
 
@@ -24,7 +24,7 @@ export const request = async (url, options = {}) => {
 
     return await response.json();
   } catch (error) {
-    console.error('API request failed:', error);
+    console.error("API request failed:", error);
     throw error;
   }
 };
