@@ -283,3 +283,30 @@ exports.getAllProducts = async (req, res) => {
     return res.status(500).json({ error: "Internal server error." });
   }
 };
+
+exports.getProductById = async (req, res) => {
+  try {
+    const { id } = req.params || {};
+
+    const product = await Product.findById(id);
+    if (!product) {
+      return res.status(404).json({ error: "Product not found." });
+    }
+
+    return res.status(200).json({
+      message: "Get product successfully.",
+      data: {
+        id: product._id,
+        sellerId: product.sellerId,
+        name: product.name,
+        price: product.price,
+        imagePath: product.imagePath,
+        description: product.description,
+        isOnSale: product.isOnSale,
+      },
+    });
+  } catch (err) {
+    console.error("Error in getProductById:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+};

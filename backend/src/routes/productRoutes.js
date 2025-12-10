@@ -335,5 +335,52 @@ router.patch("/:id/onsale", auth, productController.updateProductAvailability);
  *         description: Internal server error
  */
 router.get("/all", productController.getAllProducts);
+/**
+ * @openapi
+ * /product/detail/{id}:
+ *   get:
+ *     summary: Get product details by id
+ *     tags:
+ *       - Product
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the product
+ *     responses:
+ *       200:
+ *         description: Get product successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     sellerId:
+ *                       type: string
+ *                     name:
+ *                       type: string
+ *                     price:
+ *                       type: number
+ *                     imagePath:
+ *                       type: string
+ *                     description:
+ *                       type: string
+ *                     isOnSale:
+ *                       type: boolean
+ *       404:
+ *         description: Product not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get("/detail/:id", productController.getProductById);
 
 module.exports = router;
