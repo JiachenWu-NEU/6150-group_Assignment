@@ -271,7 +271,7 @@ function OrderHistory() {
                             <Box
                               component="img"
                               src={
-                                "http://localhost:3000" + item.productImage ||
+                                "http://localhost:3000" + item.imagePath ||
                                 "https://via.placeholder.com/80x80?text=Product"
                               }
                               alt={item.productName}
