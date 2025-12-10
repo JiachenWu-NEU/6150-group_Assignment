@@ -7,6 +7,11 @@ import ProductList from "./components/buyer/ProductList";
 import ProductDetail from "./components/buyer/ProductDetail";
 import Cart from "./components/buyer/Cart";
 
+// 卖家页面
+import SellerProductList from "./components/seller/SellerProductList";
+import AddProduct from "./components/seller/AddProduct";
+import SellerProfile from "./components/seller/SellerProfile";
+
 // 导入管理员页面
 import AdminLayout from "./components/admin/AdminLayout";
 import ProductsPage from "./components/admin/ProductsPage";
@@ -40,6 +45,11 @@ function App() {
           <Route path="/products" element={<ProductList />} />
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/cart" element={<Cart />} />
+
+          {/* 卖家路由 */}
+          <Route path="/seller/products" element={<SellerProductList />} />
+          <Route path="/seller/add-product" element={<AddProduct />} />
+          <Route path="/seller/profile" element={<SellerProfile />} />
           
           {/* 管理员路由 */}
           <Route path="/admin/*" element={<AdminLayout />}>
