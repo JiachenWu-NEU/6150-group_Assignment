@@ -1,3 +1,5 @@
+import cors from "cors";
+
 const path = require("path");
 const express = require("express");
 const swaggerUI = require("swagger-ui-express");
@@ -5,6 +7,14 @@ const swaggerSpec = require("./config/swagger");
 
 const app = express();
 app.use(express.json());
+
+app.use(cors(
+  {
+    origin: "http://localhost:3001",
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }
+));
 
 // expose images folder as static
 app.use(
