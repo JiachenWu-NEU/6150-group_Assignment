@@ -151,3 +151,33 @@ exports.updateCartQuantity = async (req, res) => {
     return res.status(500).json({ error: "Internal server error." });
   }
 };
+
+exports.getMyCart = async (req, res) => {
+  try {
+    if (!ensureBuyer(req, res)) return;
+
+    const buyerId = req.user.userId;
+
+    const items = await CartItem.find({ buyerId }).populate("productId");
+
+    const result = items.map((item) => {
+      const p = item.productId;
+      return {
+        id: item._id,
+        productId: p?._id || item.productId,
+        productName: p?.name,
+        price: p?.price,
+        imagePath: p?.imagePath,
+        quantity: item.quantity,
+      };
+    });
+
+    return res.status(200).json({
+      message: "Get cart successfully.",
+      data: result,
+    });
+  } catch (err) {
+    console.error("Error in getMyCart:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+};

@@ -190,5 +190,54 @@ router.delete("/remove", auth, cartController.removeFromCart);
  *         description: Internal server error
  */
 router.patch("/update", auth, cartController.updateCartQuantity);
+/**
+ * @openapi
+ * /cart/my:
+ *   get:
+ *     summary: Get current buyer's cart
+ *     tags:
+ *       - Cart
+ *     parameters:
+ *       - in: header
+ *         name: Authorization
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Bearer token of buyer user
+ *     responses:
+ *       200:
+ *         description: Get cart successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       productId:
+ *                         type: string
+ *                       productName:
+ *                         type: string
+ *                       price:
+ *                         type: number
+ *                       imagePath:
+ *                         type: string
+ *                       quantity:
+ *                         type: number
+ *       401:
+ *         description: Unauthorized (missing or invalid token)
+ *       403:
+ *         description: Forbidden (not buyer)
+ *       500:
+ *         description: Internal server error
+ */
+router.get("/my", auth, cartController.getMyCart);
 
 module.exports = router;
