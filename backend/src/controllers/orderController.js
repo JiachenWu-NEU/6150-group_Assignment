@@ -126,6 +126,7 @@ exports.getVenderOrders = async (req, res) => {
 
     const orders = await Order.find({ "items.sellerId": userId })
       .populate("items.productId")
+      .populate("buyerId", "address username")
       .sort({ purchaseDate: -1 });
 
     const result = [];
@@ -136,10 +137,11 @@ exports.getVenderOrders = async (req, res) => {
           const productDoc = item.productId;
           result.push({
             orderId: order._id,
-            productId: productDoc?._id || item.productId,
             productName: productDoc?.name,
+            imagePath: productDoc?.imagePath,
             quantity: item.quantity,
             purchaseDate: order.purchaseDate,
+            address: order.buyerId?.address || null,
           });
         }
       }

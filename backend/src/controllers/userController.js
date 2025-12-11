@@ -233,6 +233,7 @@ exports.getCurrentUserInfo = async (req, res) => {
         username: user.username,
         email: user.email,
         address: user.address,
+        type: user.type,
       },
     });
   } catch (err) {

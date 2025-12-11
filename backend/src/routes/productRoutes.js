@@ -423,6 +423,8 @@ router.get("/detail/:id", productController.getProductById);
  *                         type: string
  *                       isOnSale:
  *                         type: boolean
+ *                       createdAt:
+ *                         type: string
  *       401:
  *         description: Unauthorized (missing or invalid token)
  *       403:

@@ -372,6 +372,8 @@ router.delete("/:id", auth, adminOnly, userController.deleteUser);
  *                       type: string
  *                     address:
  *                       type: string
+ *                     type:
+ *                       type: string
  *       401:
  *         description: Unauthorized (missing or invalid token)
  *       404:

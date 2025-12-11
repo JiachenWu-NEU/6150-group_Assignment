@@ -165,9 +165,8 @@ router.get("/my", auth, orderController.getMyOrders);
  *                       orderId:
  *                         type: string
  *                         example: 69386123456789abcdef012
- *                       productId:
+ *                       imagePath:
  *                         type: string
- *                         example: 69385fb70d07c1f9ccfdaf07
  *                       productName:
  *                         type: string
  *                         example: item1
@@ -178,6 +177,8 @@ router.get("/my", auth, orderController.getMyOrders);
  *                         type: string
  *                         format: date-time
  *                         example: 2025-12-09T18:30:00.000Z
+ *                       address:
+ *                         type: string
  *       401:
  *         description: Unauthorized (missing or invalid token)
  *       403:
