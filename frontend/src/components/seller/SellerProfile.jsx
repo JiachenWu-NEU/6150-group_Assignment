@@ -44,7 +44,7 @@ function SellerProfile() {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // 用户信息
+  // profile data
   const [profile, setProfile] = useState({
     username: "",
     email: "",
@@ -52,56 +52,81 @@ function SellerProfile() {
     type: "",
   });
 
-  // 编辑表单
+  // edit form
   const [editForm, setEditForm] = useState({
     username: "",
     address: "",
   });
 
-  // 统计数据
+  // stats
   const [stats, setStats] = useState({
     totalProducts: 0,
     onSaleProducts: 0,
     totalSales: 0,
   });
 
-  // Snackbar 状态
+  // snackbar
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success",
   });
 
-  // 返回商品列表
   const handleBack = () => {
     navigate("/seller/products");
   };
 
-  // 加载数据
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchData = async () => {
     try {
       setLoading(true);
 
-      // 获取用户信息（如果后端没有profile接口，从localStorage获取）
-      const userInfo = getUserInfo();
-      if (userInfo) {
-        setProfile({
-          username: userInfo.username || "",
-          email: userInfo.email || "",
-          address: userInfo.address || "",
-          type: userInfo.type || "vender",
-        });
-        setEditForm({
-          username: userInfo.username || "",
-          address: userInfo.address || "",
-        });
+      // make sure user is logged in (token in localStorage)
+      const localUser = getUserInfo();
+      if (!localUser) {
+        navigate("/login");
+        return;
       }
 
-      // 获取商品统计
+      // --- 1) fetch profile from backend /user/me ---
+      try {
+        const profileResponse = await getSellerProfile();
+        if (profileResponse.data) {
+          const { username, email, address, type } = profileResponse.data || {};
+          setProfile({
+            username: username || "",
+            email: email || "",
+            address: address || "",
+            type: type || localUser.type || "vender",
+          });
+          setEditForm({
+            username: username || "",
+            address: address || "",
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch profile from API:", err);
+        // fallback to localStorage if available
+        if (localUser) {
+          setProfile({
+            username: localUser.username || "",
+            email: localUser.email || "",
+            address: localUser.address || "",
+            type: localUser.type || "vender",
+          });
+          setEditForm({
+            username: localUser.username || "",
+            address: localUser.address || "",
+          });
+        }
+        showSnackbar("Failed to load profile from server.", "error");
+      }
+
+      // --- 2) fetch product stats ---
       try {
         const productsResponse = await getMyProducts();
         if (productsResponse.data) {
@@ -118,7 +143,7 @@ function SellerProfile() {
         console.error("Failed to fetch products:", error);
       }
 
-      // 获取销售统计
+      // --- 3) fetch sales stats ---
       try {
         const ordersResponse = await getVenderOrders();
         if (ordersResponse.data) {
@@ -132,18 +157,16 @@ function SellerProfile() {
       }
     } catch (error) {
       console.error("Failed to fetch profile:", error);
-      showSnackbar("加载个人信息失败", "error");
+      showSnackbar("Failed to load profile.", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  // 开始编辑
   const handleEditClick = () => {
     setEditing(true);
   };
 
-  // 取消编辑
   const handleCancelEdit = () => {
     setEditForm({
       username: profile.username,
@@ -152,25 +175,23 @@ function SellerProfile() {
     setEditing(false);
   };
 
-  // 处理输入变化
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setEditForm({ ...editForm, [name]: value });
   };
 
-  // 保存修改
   const handleSave = async () => {
     try {
       setSaving(true);
 
       await updateSellerProfile(editForm);
 
-      // 更新本地状态
+      // update local state
       setProfile({ ...profile, ...editForm });
       setEditing(false);
-      showSnackbar("个人信息更新成功", "success");
+      showSnackbar("Profile updated successfully.", "success");
 
-      // 更新 localStorage 中的用户信息
+      // sync localStorage
       const userInfo = getUserInfo();
       if (userInfo) {
         localStorage.setItem(
@@ -180,18 +201,16 @@ function SellerProfile() {
       }
     } catch (error) {
       console.error("Failed to update profile:", error);
-      showSnackbar(error.message || "更新失败，请重试", "error");
+      showSnackbar(error.message || "Failed to update profile.", "error");
     } finally {
       setSaving(false);
     }
   };
 
-  // 显示 Snackbar
   const showSnackbar = (message, severity = "success") => {
     setSnackbar({ open: true, message, severity });
   };
 
-  // 关闭 Snackbar
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
   };
@@ -211,7 +230,7 @@ function SellerProfile() {
 
   return (
     <Box sx={{ flexGrow: 1, minHeight: "100vh", backgroundColor: "#f5f5f5" }}>
-      {/* 顶部导航栏 */}
+      {/* Top AppBar */}
       <AppBar position="sticky">
         <Toolbar>
           <IconButton
@@ -223,61 +242,22 @@ function SellerProfile() {
             <ArrowBackIcon />
           </IconButton>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            个人信息
+            Vender Profile
           </Typography>
           {!editing && (
-            <Button color="inherit" startIcon={<EditIcon />} onClick={handleEditClick}>
-              编辑
+            <Button
+              color="inherit"
+              startIcon={<EditIcon />}
+              onClick={handleEditClick}
+            >
+              Edit
             </Button>
           )}
         </Toolbar>
       </AppBar>
 
       <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
-        {/* 统计卡片 */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={4}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                  <ShoppingBagIcon color="primary" sx={{ mr: 1 }} />
-                  <Typography variant="h6">商品总数</Typography>
-                </Box>
-                <Typography variant="h4" color="primary">
-                  {stats.totalProducts}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                  <ShoppingBagIcon color="success" sx={{ mr: 1 }} />
-                  <Typography variant="h6">在售商品</Typography>
-                </Box>
-                <Typography variant="h4" color="success.main">
-                  {stats.onSaleProducts}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                  <AttachMoneyIcon color="error" sx={{ mr: 1 }} />
-                  <Typography variant="h6">总销量</Typography>
-                </Box>
-                <Typography variant="h4" color="error">
-                  {stats.totalSales}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-
-        {/* 个人信息 */}
+        {/* Profile info */}
         <Paper elevation={3} sx={{ p: 4 }}>
           <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
             <Avatar
@@ -289,12 +269,16 @@ function SellerProfile() {
                 fontSize: "2rem",
               }}
             >
-              {profile.username ? profile.username.charAt(0).toUpperCase() : "S"}
+              {profile.username
+                ? profile.username.charAt(0).toUpperCase()
+                : "S"}
             </Avatar>
             <Box>
-              <Typography variant="h5">{profile.username || "卖家"}</Typography>
+              <Typography variant="h5">
+                {profile.username || "Vender"}
+              </Typography>
               <Typography variant="body2" color="text.secondary">
-                卖家账户
+                {profile.type} account
               </Typography>
             </Box>
           </Box>
@@ -303,23 +287,25 @@ function SellerProfile() {
 
           <Box>
             {editing ? (
-              // 编辑模式
+              // edit mode
               <Box>
                 <TextField
                   fullWidth
-                  label="用户名"
+                  label="Username"
                   name="username"
                   value={editForm.username}
                   onChange={handleInputChange}
                   sx={{ mb: 3 }}
                   InputProps={{
-                    startAdornment: <PersonIcon sx={{ mr: 1, color: "action.active" }} />,
+                    startAdornment: (
+                      <PersonIcon sx={{ mr: 1, color: "action.active" }} />
+                    ),
                   }}
                 />
 
                 <TextField
                   fullWidth
-                  label="地址"
+                  label="Address"
                   name="address"
                   value={editForm.address}
                   onChange={handleInputChange}
@@ -327,11 +313,12 @@ function SellerProfile() {
                   rows={2}
                   sx={{ mb: 3 }}
                   InputProps={{
-                    startAdornment: <HomeIcon sx={{ mr: 1, color: "action.active" }} />,
+                    startAdornment: (
+                      <HomeIcon sx={{ mr: 1, color: "action.active" }} />
+                    ),
                   }}
                 />
 
-                {/* 操作按钮 */}
                 <Box sx={{ display: "flex", gap: 2, mt: 4 }}>
                   <Button
                     variant="outlined"
@@ -340,31 +327,33 @@ function SellerProfile() {
                     onClick={handleCancelEdit}
                     disabled={saving}
                   >
-                    取消
+                    Cancel
                   </Button>
                   <Button
                     variant="contained"
                     fullWidth
-                    startIcon={saving ? <CircularProgress size={20} /> : <SaveIcon />}
+                    startIcon={
+                      saving ? <CircularProgress size={20} /> : <SaveIcon />
+                    }
                     onClick={handleSave}
                     disabled={saving}
                   >
-                    {saving ? "保存中..." : "保存"}
+                    {saving ? "Saving..." : "Save"}
                   </Button>
                 </Box>
               </Box>
             ) : (
-              // 查看模式
+              // view mode
               <Box>
                 <Box sx={{ mb: 3 }}>
                   <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                     <PersonIcon sx={{ mr: 1, color: "action.active" }} />
                     <Typography variant="subtitle2" color="text.secondary">
-                      用户名
+                      Username
                     </Typography>
                   </Box>
                   <Typography variant="body1" sx={{ ml: 4 }}>
-                    {profile.username || "未设置"}
+                    {profile.username || "Not set"}
                   </Typography>
                 </Box>
 
@@ -372,11 +361,11 @@ function SellerProfile() {
                   <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                     <EmailIcon sx={{ mr: 1, color: "action.active" }} />
                     <Typography variant="subtitle2" color="text.secondary">
-                      邮箱
+                      Email
                     </Typography>
                   </Box>
                   <Typography variant="body1" sx={{ ml: 4 }}>
-                    {profile.email || "未设置"}
+                    {profile.email || "Not set"}
                   </Typography>
                 </Box>
 
@@ -384,11 +373,11 @@ function SellerProfile() {
                   <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                     <HomeIcon sx={{ mr: 1, color: "action.active" }} />
                     <Typography variant="subtitle2" color="text.secondary">
-                      地址
+                      Address
                     </Typography>
                   </Box>
                   <Typography variant="body1" sx={{ ml: 4 }}>
-                    {profile.address || "未设置"}
+                    {profile.address || "Not set"}
                   </Typography>
                 </Box>
               </Box>
@@ -397,7 +386,7 @@ function SellerProfile() {
         </Paper>
       </Container>
 
-      {/* Snackbar 通知 */}
+      {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}

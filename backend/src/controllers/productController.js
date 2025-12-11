@@ -333,6 +333,7 @@ exports.getMyProducts = async (req, res) => {
       imagePath: p.imagePath,
       description: p.description,
       isOnSale: p.isOnSale,
+      createdAt: p.createdAt,
     }));
 
     return res.status(200).json({

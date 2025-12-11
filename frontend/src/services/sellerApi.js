@@ -120,7 +120,7 @@ export const getVenderOrders = async () => {
 // 获取卖家个人信息（使用通用的用户接口）
 export const getSellerProfile = async () => {
   const token = getAuthToken();
-  const response = await fetch(`${API_BASE_URL}/user/profile`, {
+  const response = await fetch(`${API_BASE_URL}/user/me`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
