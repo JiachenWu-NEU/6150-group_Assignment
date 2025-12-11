@@ -210,3 +210,33 @@ exports.deleteUser = async (req, res) => {
     return res.status(500).json({ error: "Internal server error." });
   }
 };
+
+exports.getCurrentUserInfo = async (req, res) => {
+  try {
+    const { userId } = req.user || {};
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized." });
+    }
+
+    const user = await User.findById(userId).select(
+      "username email address type isAvailable"
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    return res.status(200).json({
+      message: "Get current user info successfully.",
+      data: {
+        username: user.username,
+        email: user.email,
+        address: user.address,
+      },
+    });
+  } catch (err) {
+    console.error("Error in getCurrentUserInfo:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+};
