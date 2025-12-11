@@ -30,6 +30,7 @@ import {
   Logout as LogoutIcon,
   Store as StoreIcon,
 } from '@mui/icons-material';
+import { APP_NAME } from "../../config/appConfig";
 
 const drawerWidth = 240;
 
@@ -85,7 +86,7 @@ const AdminLayout = () => {
       <Box sx={{ p: 3, textAlign: 'center', bgcolor: 'primary.main' }}>
         <StoreIcon sx={{ fontSize: 48, color: 'white', mb: 1 }} />
         <Typography variant="h6" sx={{ color: 'white', fontWeight: 'bold' }}>
-          SecondHand Marketplace
+          {APP_NAME}
         </Typography>
         <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
           Admin Panel

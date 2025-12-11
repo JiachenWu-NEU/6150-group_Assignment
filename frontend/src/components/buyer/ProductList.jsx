@@ -32,6 +32,7 @@ import { getUserInfo, logout } from "../../utils/auth";
 import { getProducts, addToCart } from "../../services/buyerApi";
 import { useNavigate } from "react-router-dom";
 import Chatbot from "./Chatbot";
+import { APP_NAME } from "../../config/appConfig";
 
 function ProductList() {
   const navigate = useNavigate();
@@ -185,7 +186,7 @@ function ProductList() {
       <AppBar position="sticky">
         <Toolbar>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            SecondHand Marketplace
+            {APP_NAME}
           </Typography>
 
           {userInfo && (
