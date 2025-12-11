@@ -181,7 +181,26 @@ exports.deleteProduct = async (req, res) => {
         .json({ error: "Only vender or admin can delete products." });
     }
 
+    const imagePath = product.imagePath;
+
     await product.deleteOne();
+
+    if (imagePath) {
+      try {
+        const absPath = path.join(
+          __dirname,
+          "..",
+          "..",
+          imagePath.replace(/^\//, "")
+        );
+
+        if (fs.existsSync(absPath)) {
+          fs.unlinkSync(absPath);
+        }
+      } catch (err) {
+        console.error("Failed to delete product image on delete:", err);
+      }
+    }
 
     return res.status(200).json({
       message: "Product deleted successfully.",
