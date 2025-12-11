@@ -247,11 +247,6 @@ function OrderHistory() {
                         )}
                       </Typography>
                     </Box>
-                    <Chip
-                      icon={getStatusIcon(order.status)}
-                      label={order.status || "Processing"}
-                      color={getStatusColor(order.status)}
-                    />
                   </Box>
 
                   <Divider sx={{ my: 2 }} />
@@ -334,22 +329,24 @@ function OrderHistory() {
                   <Divider sx={{ my: 2 }} />
 
                   {/* Order Footer */}
+                  {/* Order Footer */}
                   <Box
                     sx={{
                       display: "flex",
-                      justifyContent: "space-between",
+                      justifyContent: "flex-end",
                       alignItems: "center",
                     }}
                   >
                     <Typography variant="h6" fontWeight="bold">
-                      Total: ${order.totalAmount?.toLocaleString() || "0"}
+                      Total: $
+                      {order.items
+                        ?.reduce(
+                          (sum, item) =>
+                            sum + (item.price || 0) * (item.quantity || 0),
+                          0
+                        )
+                        .toLocaleString() || "0"}
                     </Typography>
-                    <Button
-                      variant="outlined"
-                      onClick={() => handleViewOrderDetails(order.id)}
-                    >
-                      View Details
-                    </Button>
                   </Box>
                 </CardContent>
               </Card>
