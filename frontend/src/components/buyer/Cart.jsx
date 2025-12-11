@@ -217,6 +217,10 @@ function Cart() {
     setSnackbar({ open: true, message, severity });
   };
 
+  const handleProfile = () => {
+    navigate("/profile");
+  };
+
   // Close snackbar
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
@@ -252,13 +256,14 @@ function Cart() {
             Shopping Cart
           </Typography>
 
-          {/* User Info */}
           {userInfo && (
-            <Chip
-              icon={<PersonIcon />}
-              label={userInfo.username}
-              color="secondary"
-            />
+            <IconButton
+              color="inherit"
+              onClick={handleProfile}
+              sx={{ mr: 1 }}
+            >
+              <PersonIcon />
+            </IconButton>
           )}
         </Toolbar>
       </AppBar>

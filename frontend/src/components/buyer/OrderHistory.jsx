@@ -127,6 +127,10 @@ function OrderHistory() {
     setSnackbar({ open: true, message, severity });
   };
 
+  const handleProfile = () => {
+    navigate("/profile");
+  };
+
   // Close snackbar
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
@@ -162,13 +166,14 @@ function OrderHistory() {
             Order History
           </Typography>
 
-          {/* User Info */}
           {userInfo && (
-            <Chip
-              icon={<PersonIcon />}
-              label={userInfo.username}
-              color="secondary"
-            />
+            <IconButton
+              color="inherit"
+              onClick={handleProfile}
+              sx={{ mr: 1 }}
+            >
+              <PersonIcon />
+            </IconButton>
           )}
         </Toolbar>
       </AppBar>
