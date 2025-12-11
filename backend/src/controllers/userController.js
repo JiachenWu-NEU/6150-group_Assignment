@@ -61,6 +61,12 @@ exports.login = async (req, res) => {
       return res.status(401).json({ error: "Invalid email or password." });
     }
 
+    if (!user.isAvailable) {
+      return res
+        .status(403)
+        .json({ error: "User is disabled and cannot login." });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ error: "Invalid email or password." });
@@ -133,18 +139,16 @@ exports.disableUser = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const user = await User.findByIdAndUpdate(
-      id,
-      { $set: { isAvailable: false } },
-      { new: true }
-    );
-
+    const user = await User.findById(id);
     if (!user) {
       return res.status(404).json({ error: "User not found." });
     }
 
+    user.isAvailable = !user.isAvailable;
+    await user.save();
+
     return res.status(200).json({
-      message: "User disabled successfully.",
+      message: "User availability toggled successfully.",
       data: {
         username: user.username,
         email: user.email,
