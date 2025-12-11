@@ -123,6 +123,10 @@ function ProductDetail() {
     setSnackbar({ open: true, message, severity });
   };
 
+  const handleProfile = () => {
+    navigate("/profile");
+  };
+
   // Close snackbar
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
@@ -173,14 +177,14 @@ function ProductDetail() {
             Product Details
           </Typography>
 
-          {/* User Info */}
           {userInfo && (
-            <Chip
-              icon={<PersonIcon />}
-              label={userInfo.username}
-              color="secondary"
-              sx={{ mr: 2 }}
-            />
+            <IconButton
+              color="inherit"
+              onClick={handleProfile}
+              sx={{ mr: 1 }}
+            >
+              <PersonIcon />
+            </IconButton>
           )}
 
           {/* AI Chatbot Button */}

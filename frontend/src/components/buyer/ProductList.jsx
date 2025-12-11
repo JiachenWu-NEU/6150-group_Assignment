@@ -162,6 +162,10 @@ function ProductList() {
     setSnackbar({ ...snackbar, open: false });
   };
 
+  const handleProfile = () => {
+    navigate("/profile");
+  };
+
   if (loading) {
     return (
       <Box
@@ -184,14 +188,14 @@ function ProductList() {
             SecondHand Marketplace
           </Typography>
 
-          {/* User Info */}
           {userInfo && (
-            <Chip
-              icon={<PersonIcon />}
-              label={userInfo.username}
-              color="secondary"
-              sx={{ mr: 2 }}
-            />
+            <IconButton
+              color="inherit"
+              onClick={handleProfile}
+              sx={{ mr: 1 }}
+            >
+              <PersonIcon />
+            </IconButton>
           )}
 
           <IconButton

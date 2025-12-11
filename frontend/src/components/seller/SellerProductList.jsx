@@ -124,7 +124,7 @@ function SellerProductList() {
   };
 
   const handleProfile = () => {
-    navigate("/seller/profile");
+    navigate("/profile");
   };
 
   const handleEditClick = (product) => {
@@ -235,17 +235,17 @@ function SellerProductList() {
         <Toolbar>
           <StoreIcon sx={{ mr: 2 }} />
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Seller Center
+            Vender Center
           </Typography>
 
           {userInfo && (
-            <Chip
-              icon={<PersonIcon />}
-              label={userInfo.username || "Seller"}
-              color="secondary"
-              sx={{ mr: 2 }}
+            <IconButton
+              color="inherit"
               onClick={handleProfile}
-            />
+              sx={{ mr: 1 }}
+            >
+              <PersonIcon />
+            </IconButton>
           )}
 
           <IconButton color="inherit" onClick={handleLogout}>

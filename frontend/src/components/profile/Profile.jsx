@@ -31,14 +31,10 @@ import {
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { getUserInfo } from "../../utils/auth";
-import {
-  getSellerProfile,
-  updateSellerProfile,
-  getVenderOrders,
-  getMyProducts,
-} from "../../services/sellerApi";
 
-function SellerProfile() {
+import { getProfile, updateProfile } from "../../services/profileApi"
+
+function Profile() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -58,13 +54,6 @@ function SellerProfile() {
     address: "",
   });
 
-  // stats
-  const [stats, setStats] = useState({
-    totalProducts: 0,
-    onSaleProducts: 0,
-    totalSales: 0,
-  });
-
   // snackbar
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -73,7 +62,11 @@ function SellerProfile() {
   });
 
   const handleBack = () => {
-    navigate("/seller/products");
+    if (profile.type === "buyer") {
+      navigate("/products");
+    } else {
+      navigate("/seller/products");
+    }
   };
 
   useEffect(() => {
@@ -92,16 +85,15 @@ function SellerProfile() {
         return;
       }
 
-      // --- 1) fetch profile from backend /user/me ---
       try {
-        const profileResponse = await getSellerProfile();
+        const profileResponse = await getProfile();
         if (profileResponse.data) {
           const { username, email, address, type } = profileResponse.data || {};
           setProfile({
             username: username || "",
             email: email || "",
             address: address || "",
-            type: type || localUser.type || "vender",
+            type: type || localUser.type,
           });
           setEditForm({
             username: username || "",
@@ -110,50 +102,11 @@ function SellerProfile() {
         }
       } catch (err) {
         console.error("Failed to fetch profile from API:", err);
-        // fallback to localStorage if available
-        if (localUser) {
-          setProfile({
-            username: localUser.username || "",
-            email: localUser.email || "",
-            address: localUser.address || "",
-            type: localUser.type || "vender",
-          });
-          setEditForm({
+        setEditForm({
             username: localUser.username || "",
             address: localUser.address || "",
-          });
-        }
+        });
         showSnackbar("Failed to load profile from server.", "error");
-      }
-
-      // --- 2) fetch product stats ---
-      try {
-        const productsResponse = await getMyProducts();
-        if (productsResponse.data) {
-          const myProducts = productsResponse.data;
-          const onSale = myProducts.filter((p) => p.isOnSale).length;
-
-          setStats((prev) => ({
-            ...prev,
-            totalProducts: myProducts.length,
-            onSaleProducts: onSale,
-          }));
-        }
-      } catch (error) {
-        console.error("Failed to fetch products:", error);
-      }
-
-      // --- 3) fetch sales stats ---
-      try {
-        const ordersResponse = await getVenderOrders();
-        if (ordersResponse.data) {
-          setStats((prev) => ({
-            ...prev,
-            totalSales: ordersResponse.data.length,
-          }));
-        }
-      } catch (error) {
-        console.error("Failed to fetch orders:", error);
       }
     } catch (error) {
       console.error("Failed to fetch profile:", error);
@@ -184,7 +137,7 @@ function SellerProfile() {
     try {
       setSaving(true);
 
-      await updateSellerProfile(editForm);
+      await updateProfile(editForm);
 
       // update local state
       setProfile({ ...profile, ...editForm });
@@ -405,4 +358,4 @@ function SellerProfile() {
   );
 }
 
-export default SellerProfile;
+export default Profile;
