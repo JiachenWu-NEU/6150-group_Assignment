@@ -339,5 +339,46 @@ router.get("/all", auth, adminOnly, userController.getAllUsers);
  *         description: Internal server error
  */
 router.delete("/:id", auth, adminOnly, userController.deleteUser);
+/**
+ * @openapi
+ * /user/me:
+ *   get:
+ *     summary: Get current user's basic info from token
+ *     tags:
+ *       - User
+ *     parameters:
+ *       - in: header
+ *         name: Authorization
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Bearer token of any logged-in user
+ *     responses:
+ *       200:
+ *         description: Get current user info successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     username:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     address:
+ *                       type: string
+ *       401:
+ *         description: Unauthorized (missing or invalid token)
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get("/me", auth, userController.getCurrentUserInfo);
 
 module.exports = router;
