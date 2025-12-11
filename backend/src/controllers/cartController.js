@@ -33,6 +33,10 @@ exports.addToCart = async (req, res) => {
       return res.status(404).json({ error: "Product not found." });
     }
 
+    if (product.isOnSale === false) {
+      return res.status(400).json({ error: "Product is out of stock." });
+    }
+
     let item = await CartItem.findOne({ buyerId, productId });
 
     if (item) {

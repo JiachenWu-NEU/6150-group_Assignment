@@ -364,15 +364,6 @@ function Checkout() {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             Checkout
           </Typography>
-
-          {/* User Info */}
-          {userInfo && (
-            <Chip
-              icon={<PersonIcon />}
-              label={userInfo.username}
-              color="secondary"
-            />
-          )}
         </Toolbar>
       </AppBar>
 

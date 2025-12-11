@@ -10,7 +10,6 @@ import {
   CardContent,
   IconButton,
   Button,
-  Checkbox,
   Divider,
   AppBar,
   Toolbar,
@@ -38,7 +37,6 @@ import { getUserInfo } from "../../utils/auth";
 function Cart() {
   const navigate = useNavigate();
   const [cartItems, setCartItems] = useState([]);
-  const [selectedItems, setSelectedItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userInfo, setUserInfo] = useState(null);
 
@@ -53,16 +51,11 @@ function Cart() {
   useEffect(() => {
     const user = getUserInfo();
     if (!user) {
-      const mockUser = {
-        id: "user123",
-        username: "John Doe",
-        email: "john@example.com",
-      };
-      setUserInfo(mockUser);
+      navigate("/login");
     } else {
       setUserInfo(user);
     }
-  }, []);
+  }, [navigate]);
 
   // Fetch cart
   useEffect(() => {
@@ -75,7 +68,6 @@ function Cart() {
       const response = await getCart();
 
       if (response.success && response.data) {
-        // 转换后端数据格式
         const transformedItems = response.data.map((item) => ({
           id: item.id,
           productId: item.productId,
@@ -83,14 +75,14 @@ function Cart() {
           price: item.price,
           quantity: item.quantity,
           image:
-            "http://localhost:3000" + item.imagePath ||
+            (item.imagePath
+              ? "http://localhost:3000" + item.imagePath
+              : null) ||
             "https://via.placeholder.com/100x100?text=Product",
-          isAvailable: true,
+          isAvailable: true, // 如果后端有字段可以改成真实状态
         }));
 
         setCartItems(transformedItems);
-        // 默认选中所有商品
-        setSelectedItems(transformedItems.map((item) => item.productId));
       }
     } catch (error) {
       console.error("Failed to fetch cart:", error);
@@ -100,30 +92,12 @@ function Cart() {
     }
   };
 
-  // Toggle item selection
-  const handleToggleItem = (productId) => {
-    setSelectedItems((prev) =>
-      prev.includes(productId)
-        ? prev.filter((id) => id !== productId)
-        : [...prev, productId]
-    );
-  };
-
-  // Select all / Deselect all
-  const handleToggleAll = () => {
-    if (selectedItems.length === cartItems.length) {
-      setSelectedItems([]);
-    } else {
-      setSelectedItems(cartItems.map((item) => item.productId));
-    }
-  };
-
   // Update quantity
   const handleUpdateQuantity = async (productId, newQuantity) => {
     if (newQuantity < 1) return;
 
     try {
-      // 乐观更新UI
+      // optimistic UI
       setCartItems((prevItems) =>
         prevItems.map((item) =>
           item.productId === productId
@@ -138,7 +112,6 @@ function Cart() {
         showSnackbar("Cart updated", "success");
       } else {
         showSnackbar(response.message || "Failed to update cart", "error");
-        // 如果失败，重新获取购物车数据
         fetchCart();
       }
     } catch (error) {
@@ -157,9 +130,6 @@ function Cart() {
         setCartItems((prevItems) =>
           prevItems.filter((item) => item.productId !== productId)
         );
-        setSelectedItems((prevSelected) =>
-          prevSelected.filter((id) => id !== productId)
-        );
         showSnackbar("Item removed from cart", "success");
       } else {
         showSnackbar(response.message || "Failed to remove item", "error");
@@ -170,16 +140,14 @@ function Cart() {
     }
   };
 
-  // Clear cart (暂时没有后端接口，可以通过删除所有商品实现)
+  // Clear cart (still using loop, or以后接一个clear-cart接口)
   const handleClearCart = async () => {
     if (window.confirm("Are you sure you want to clear your cart?")) {
       try {
-        // 逐个删除所有商品
         for (const item of cartItems) {
           await removeFromCart(item.productId);
         }
         setCartItems([]);
-        setSelectedItems([]);
         showSnackbar("Cart cleared", "success");
       } catch (error) {
         console.error("Failed to clear cart:", error);
@@ -188,24 +156,23 @@ function Cart() {
     }
   };
 
-  // Proceed to checkout
+  // Proceed to checkout: entire cart
   const handleCheckout = () => {
-    if (selectedItems.length === 0) {
-      showSnackbar("Please select at least one item", "warning");
+    if (cartItems.length === 0) {
+      showSnackbar("Your cart is empty", "warning");
       return;
     }
 
-    const selectedProducts = cartItems.filter((item) =>
-      selectedItems.includes(item.productId)
-    );
-    navigate("/checkout", { state: { items: selectedProducts } });
+    // 把所有商品传给 checkout 页面（页面里再调用“根据 token 生成订单 + 清空购物车”的接口）
+    navigate("/checkout", { state: { items: cartItems } });
   };
 
-  // Calculate totals
+  // Calculate totals for the whole cart
   const calculateSubtotal = () => {
-    return cartItems
-      .filter((item) => selectedItems.includes(item.productId))
-      .reduce((sum, item) => sum + item.price * item.quantity, 0);
+    return cartItems.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
   };
 
   const subtotal = calculateSubtotal();
@@ -257,11 +224,7 @@ function Cart() {
           </Typography>
 
           {userInfo && (
-            <IconButton
-              color="inherit"
-              onClick={handleProfile}
-              sx={{ mr: 1 }}
-            >
+            <IconButton color="inherit" onClick={handleProfile} sx={{ mr: 1 }}>
               <PersonIcon />
             </IconButton>
           )}
@@ -306,7 +269,7 @@ function Cart() {
             {/* Cart Items */}
             <Grid item xs={12} md={8}>
               <Paper elevation={2} sx={{ p: 3 }}>
-                {/* Select All */}
+                {/* Header + Clear Cart */}
                 <Box
                   sx={{
                     display: "flex",
@@ -315,19 +278,9 @@ function Cart() {
                     mb: 2,
                   }}
                 >
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <Checkbox
-                      checked={selectedItems.length === cartItems.length}
-                      indeterminate={
-                        selectedItems.length > 0 &&
-                        selectedItems.length < cartItems.length
-                      }
-                      onChange={handleToggleAll}
-                    />
-                    <Typography variant="body1" fontWeight="500">
-                      Select All ({cartItems.length} items)
-                    </Typography>
-                  </Box>
+                  <Typography variant="body1" fontWeight="500">
+                    Cart Items ({cartItems.length})
+                  </Typography>
                   <Button
                     color="error"
                     startIcon={<DeleteIcon />}
@@ -350,15 +303,6 @@ function Cart() {
                   >
                     <CardContent>
                       <Grid container spacing={2} alignItems="center">
-                        {/* Checkbox */}
-                        <Grid item>
-                          <Checkbox
-                            checked={selectedItems.includes(item.productId)}
-                            onChange={() => handleToggleItem(item.productId)}
-                            disabled={!item.isAvailable}
-                          />
-                        </Grid>
-
                         {/* Product Image */}
                         <Grid item>
                           <CardMedia
@@ -474,7 +418,7 @@ function Cart() {
                     }}
                   >
                     <Typography variant="body1">
-                      Subtotal ({selectedItems.length} items)
+                      Subtotal ({cartItems.length} items)
                     </Typography>
                     <Typography variant="body1" fontWeight="500">
                       ${subtotal.toFixed(2)}
@@ -534,7 +478,7 @@ function Cart() {
                   size="large"
                   fullWidth
                   onClick={handleCheckout}
-                  disabled={selectedItems.length === 0}
+                  disabled={cartItems.length === 0}
                 >
                   Proceed to Checkout
                 </Button>
