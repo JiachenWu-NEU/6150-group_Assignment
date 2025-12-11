@@ -30,7 +30,6 @@ function AddProduct() {
   const [loading, setLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
 
-  // 表单状态
   const [formData, setFormData] = useState({
     name: "",
     price: "",
@@ -39,101 +38,88 @@ function AddProduct() {
     image: null,
   });
 
-  // 表单验证错误
   const [errors, setErrors] = useState({});
 
-  // Snackbar 状态
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success",
   });
 
-  // 返回商品列表
   const handleBack = () => {
     navigate("/seller/products");
   };
 
-  // 处理输入变化
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-    // 清除该字段的错误
     if (errors[name]) {
       setErrors({ ...errors, [name]: "" });
     }
   };
 
-  // 处理开关变化
   const handleSwitchChange = (e) => {
     setFormData({ ...formData, isOnSale: e.target.checked });
   };
 
-  // 处理图片选择
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // 验证文件类型
       const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif"];
       if (!validTypes.includes(file.type)) {
-        showSnackbar("请选择有效的图片文件（JPG、PNG、GIF）", "error");
+        showSnackbar("Please choose valid photo(JPG、PNG、GIF)", "error");
         return;
       }
 
-      // 验证文件大小（最大5MB）
       if (file.size > 5 * 1024 * 1024) {
-        showSnackbar("图片大小不能超过5MB", "error");
+        showSnackbar("Photo size should not be larger than 5MB", "error");
         return;
       }
 
       setFormData({ ...formData, image: file });
 
-      // 生成预览
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
       };
       reader.readAsDataURL(file);
 
-      // 清除图片错误
       if (errors.image) {
         setErrors({ ...errors, image: "" });
       }
     }
   };
 
-  // 验证表单
   const validateForm = () => {
     const newErrors = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = "请输入商品名称";
+      newErrors.name = "Please input product name";
     }
 
     if (!formData.price) {
-      newErrors.price = "请输入价格";
+      newErrors.price = "please input product price";
     } else if (parseFloat(formData.price) <= 0) {
-      newErrors.price = "价格必须大于0";
+      newErrors.price = "please input valid price";
     }
 
     if (!formData.description.trim()) {
-      newErrors.description = "请输入商品描述";
+      newErrors.description = "please input product description";
     }
 
     if (!formData.image) {
-      newErrors.image = "请上传商品图片";
+      newErrors.image = "please choose a photo";
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // 提交表单
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!validateForm()) {
-      showSnackbar("请填写所有必填项", "error");
+      showSnackbar("please fill all the blanks in the form", "error");
       return;
     }
 
@@ -150,7 +136,7 @@ function AddProduct() {
 
       await createProduct(submitData);
 
-      showSnackbar("商品发布成功！", "success");
+      showSnackbar("Product published successfully", "success");
 
       // 延迟跳转，让用户看到成功消息
       setTimeout(() => {
@@ -158,7 +144,7 @@ function AddProduct() {
       }, 1500);
     } catch (error) {
       console.error("Failed to create product:", error);
-      showSnackbar(error.message || "发布失败，请重试", "error");
+      showSnackbar(error.message || "Published failed, please try again", "error");
     } finally {
       setLoading(false);
     }
@@ -196,14 +182,14 @@ function AddProduct() {
       <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
         <Paper elevation={3} sx={{ p: 4 }}>
           <Typography variant="h5" gutterBottom sx={{ mb: 3 }}>
-            商品信息
+            Product Information
           </Typography>
 
           <Box component="form" onSubmit={handleSubmit}>
             {/* 商品名称 */}
             <TextField
               fullWidth
-              label="商品名称"
+              label="Product name"
               name="name"
               value={formData.name}
               onChange={handleInputChange}
@@ -216,7 +202,7 @@ function AddProduct() {
             {/* 价格 */}
             <TextField
               fullWidth
-              label="价格 (USD)"
+              label="Price (USD)"
               name="price"
               type="number"
               value={formData.price}
@@ -234,7 +220,7 @@ function AddProduct() {
             {/* 商品描述 */}
             <TextField
               fullWidth
-              label="商品描述"
+              label="Product description"
               name="description"
               value={formData.description}
               onChange={handleInputChange}
@@ -249,7 +235,7 @@ function AddProduct() {
             {/* 图片上传 */}
             <Box sx={{ mb: 3 }}>
               <Typography variant="subtitle1" gutterBottom>
-                商品图片 *
+                Product Photo *
               </Typography>
               <Button
                 variant="outlined"
@@ -258,7 +244,7 @@ function AddProduct() {
                 fullWidth
                 sx={{ mb: 2 }}
               >
-                选择图片
+                Choose a photo
                 <input
                   type="file"
                   hidden
@@ -279,7 +265,7 @@ function AddProduct() {
                   <CardMedia
                     component="img"
                     image={imagePreview}
-                    alt="预览"
+                    alt="preview"
                     sx={{ maxHeight: 300, objectFit: "contain" }}
                   />
                 </Card>
@@ -295,7 +281,7 @@ function AddProduct() {
                   color="primary"
                 />
               }
-              label="立即上架"
+              label="Enable on sale"
               sx={{ mb: 3 }}
             />
 
@@ -316,7 +302,7 @@ function AddProduct() {
                 startIcon={loading ? <CircularProgress size={20} /> : <SaveIcon />}
                 disabled={loading}
               >
-                {loading ? "发布中..." : "发布商品"}
+                {loading ? "Publishing..." : "Publish Product"}
               </Button>
             </Box>
           </Box>

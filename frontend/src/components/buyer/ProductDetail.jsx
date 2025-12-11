@@ -80,7 +80,7 @@ function ProductDetail() {
       if (response.success && response.data) {
         setProduct(response.data);
       } else {
-        showSnackbar("Product not found", "error");
+        showSnackbar("Product is deleted", "error");
         setTimeout(() => navigate("/products"), 1500);
       }
     } catch (error) {
@@ -369,10 +369,10 @@ function ProductDetail() {
                     </Avatar>
                     <Box>
                       <Typography variant="body1" fontWeight="500">
-                        Seller ID: {product.sellerId}
+                        Seller Name: {product.sellerId}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Contact seller for more information
+                        Seller Address: {product.sellerAddress}
                       </Typography>
                     </Box>
                   </Box>

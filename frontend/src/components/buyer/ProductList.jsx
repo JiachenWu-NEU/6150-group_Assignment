@@ -133,7 +133,7 @@ function ProductList() {
           "success"
         );
       } else {
-        showSnackbar(response.message || "Failed to add to cart", "error");
+        showSnackbar("Product is out of stock", "error");
       }
     } catch (error) {
       console.error("Failed to add to cart:", error);
@@ -340,18 +340,27 @@ function ProductList() {
                     {product.createdAt && (
                       <Typography variant="caption" color="text.secondary">
                         Posted:{" "}
-                        {new Date(product.createdAt).toLocaleDateString()}
+                        {new Date(product.createdAt).toLocaleString()}
                       </Typography>
                     )}
                   </CardContent>
 
                   {/* Action Buttons */}
-                  <CardActions sx={{ p: 2, pt: 0 }}>
+                  <CardActions
+                    sx={{
+                      p: 2,
+                      pt: 0,
+                      display: "flex",
+                      flexDirection: { xs: "column", sm: "row" },
+                      gap: 1,
+                    }}
+                  >
                     <Button
                       size="small"
                       variant="outlined"
                       fullWidth
                       onClick={() => handleViewDetails(product.id)}
+                      sx={{ flex: 1, whiteSpace: "nowrap" }}
                     >
                       View Details
                     </Button>
@@ -361,6 +370,7 @@ function ProductList() {
                       fullWidth
                       startIcon={<ShoppingCartIcon />}
                       onClick={() => handleAddToCart(product.id)}
+                      sx={{ flex: 1, whiteSpace: "nowrap" }}
                     >
                       Add to Cart
                     </Button>

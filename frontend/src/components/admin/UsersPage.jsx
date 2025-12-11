@@ -30,6 +30,8 @@ import {
   Snackbar,
   Switch,
   Tooltip,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -43,6 +45,9 @@ import {
 import { request } from '../../services/api';
 
 const UsersPage = () => {
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('md')); // md 以下当作小屏
+
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -69,32 +74,10 @@ const UsersPage = () => {
       const url = '/user/all';
       const response = await request(url);
       
-      console.log('=== FETCH USERS DEBUG ===');
-      console.log('Full API Response:', response);
-      console.log('Response data:', response.data);
-      
       const apiUsers = response.data || [];
       
-      if (apiUsers.length > 0) {
-        console.log('First user (raw from API):', apiUsers[0]);
-        console.log('All keys in first user:', Object.keys(apiUsers[0]));
-      }
-      
-      // Map API fields - try multiple possible ID field names
-      const formattedUsers = apiUsers.map((user, index) => {
-        // Try to find ID from various possible field names
+      const formattedUsers = apiUsers.map((user) => {
         const userId = user._id || user.id || user.userId || user.user_id || user.ID;
-        
-        console.log(`User ${index} mapping:`, {
-          raw_user: user,
-          extracted_id: userId,
-          username: user.username
-        });
-        
-        if (!userId) {
-          console.error(`❌ User ${index} has NO valid ID!`, user);
-        }
-        
         return {
           id: userId || '',
           username: user.username || '',
@@ -105,9 +88,6 @@ const UsersPage = () => {
           avatar: user.username ? user.username.substring(0, 2).toUpperCase() : 'U',
         };
       });
-      
-      console.log('Formatted users (first 3):', formattedUsers.slice(0, 3));
-      console.log('Users without IDs:', formattedUsers.filter(u => !u.id));
       
       setUsers(formattedUsers);
       setTotalUsers(formattedUsers.length);
@@ -156,30 +136,17 @@ const UsersPage = () => {
       return;
     }
 
-    // Set loading state for this specific user
     setUpdatingStatus(prev => ({ ...prev, [user.id]: true }));
 
     try {
       const newStatus = user.status === 'active' ? 'inactive' : 'active';
       
-      console.log('=== UPDATE USER STATUS ===');
-      console.log('User:', user.username);
-      console.log('User ID:', user.id);
-      console.log('Current status:', user.status);
-      console.log('Attempting to change to:', newStatus);
-      
       if (newStatus === 'inactive') {
-        // Disable user using PATCH /user/:id/disable
         const disableUrl = `/user/${user.id}/disable`;
-        console.log('Disabling user with URL:', disableUrl);
-        
         const response = await request(disableUrl, {
           method: 'PATCH'
         });
         
-        console.log('Disable successful:', response);
-        
-        // Update local state
         setUsers(prevUsers => 
           prevUsers.map(u => 
             u.id === user.id 
@@ -193,50 +160,30 @@ const UsersPage = () => {
           message: `User "${user.username}" has been disabled (cannot login)`,
           severity: 'success'
         });
-        
       } else {
-        // Enable user - this endpoint might not exist
-        // Try using PUT /user/:id with isAvailable: true
+        // 反转 isAvailable 的后端已经改成 toggle，这里直接 PATCH 同一个接口就行
         const enableUrl = `/user/${user.id}/disable`;
-        console.log('Attempting to enable user with URL:', enableUrl);
+        const response = await request(enableUrl, {
+          method: 'PATCH'
+        });
+
+        setUsers(prevUsers => 
+          prevUsers.map(u => 
+            u.id === user.id 
+              ? { ...u, status: 'active' }
+              : u
+          )
+        );
         
-        try {
-          const response = await request(enableUrl, {
-            method: 'PATCH'
-          });
-          
-          console.log('Enable successful:', response);
-          
-          // Update local state
-          setUsers(prevUsers => 
-            prevUsers.map(u => 
-              u.id === user.id 
-                ? { ...u, status: 'active' }
-                : u
-            )
-          );
-          
-          setSnackbar({
-            open: true,
-            message: `User "${user.username}" has been enabled (can login)`,
-            severity: 'success'
-          });
-        } catch (enableErr) {
-          console.error('Enable endpoint not available:', enableErr);
-          setSnackbar({
-            open: true,
-            message: 'Cannot enable user - backend only supports disabling users. Contact backend developer to add enable endpoint.',
-            severity: 'warning'
-          });
-        }
+        setSnackbar({
+          open: true,
+          message: `User "${user.username}" has been enabled (can login)`,
+          severity: 'success'
+        });
       }
       
     } catch (err) {
-      console.error('=== UPDATE STATUS ERROR ===');
-      console.error('Full error:', err);
-      console.error('Error message:', err.message);
-      console.error('Error response:', err.response);
-      
+      console.error('Update status error:', err);
       let errorMessage = 'Failed to update user status';
       
       if (err.response?.status === 404) {
@@ -259,7 +206,6 @@ const UsersPage = () => {
         severity: 'error'
       });
     } finally {
-      // Clear loading state
       setUpdatingStatus(prev => {
         const newState = { ...prev };
         delete newState[user.id];
@@ -269,12 +215,10 @@ const UsersPage = () => {
   };
 
   const handleDeleteUser = (user) => {
-    console.log('handleDeleteUser called with:', user);
-    
     if (!user.id || user.id === '') {
       setSnackbar({
         open: true,
-        message: `Cannot delete user "${user.username}" - User ID is missing. Check console for details.`,
+        message: `Cannot delete user "${user.username}" - User ID is missing.`,
         severity: 'error'
       });
       return;
@@ -286,7 +230,6 @@ const UsersPage = () => {
 
   const confirmDelete = async () => {
     if (!selectedUser || !selectedUser.id) {
-      console.error('Cannot delete - selectedUser:', selectedUser);
       setSnackbar({
         open: true,
         message: 'Invalid user ID. Cannot delete user.',
@@ -298,21 +241,11 @@ const UsersPage = () => {
     setDeleting(true);
     
     try {
-      console.log('=== DELETE USER DEBUG ===');
-      console.log('Selected user:', selectedUser);
-      console.log('User ID:', selectedUser.id);
-      console.log('User ID type:', typeof selectedUser.id);
-      
       const deleteUrl = `/user/${selectedUser.id}`;
-      console.log('DELETE URL:', deleteUrl);
-      
       const response = await request(deleteUrl, {
         method: 'DELETE',
       });
       
-      console.log('Delete successful:', response);
-      
-      // Remove from local state
       setUsers(prevUsers => prevUsers.filter(u => u.id !== selectedUser.id));
       setTotalUsers(prev => prev - 1);
       
@@ -326,16 +259,12 @@ const UsersPage = () => {
       setSelectedUser(null);
       
     } catch (err) {
-      console.error('=== DELETE ERROR ===');
-      console.error('Error:', err);
-      console.error('Response:', err.response);
-      console.error('Status:', err.response?.status);
-      console.error('Data:', err.response?.data);
+      console.error('Delete error:', err);
       
       let errorMessage = 'Failed to delete user';
       
       if (err.response?.status === 404) {
-        errorMessage = `User not found (404). Attempted URL: /user/${selectedUser.id}. Check if the user ID is correct.`;
+        errorMessage = `User not found (404). Attempted URL: /user/${selectedUser.id}.`;
       } else if (err.response?.status === 403) {
         errorMessage = 'Permission denied (403). You need admin privileges.';
       } else if (err.response?.status === 401) {
@@ -383,9 +312,8 @@ const UsersPage = () => {
   const getTypeColor = (type) => {
     switch (type) {
       case 'admin': return 'error';
-      case 'seller': return 'warning';
+      case 'vender': return 'warning';
       case 'buyer': return 'info';
-      case 'user': return 'success';
       default: return 'default';
     }
   };
@@ -408,7 +336,7 @@ const UsersPage = () => {
 
   if (error && users.length === 0) {
     return (
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ p: { xs: 2, md: 3 } }}>
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
         </Alert>
@@ -422,29 +350,24 @@ const UsersPage = () => {
     );
   }
 
-  // Count users without IDs
   const usersWithoutIds = users.filter(u => !u.id || u.id === '').length;
 
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
+    <Box sx={{ p: { xs: 1.5, md: 0 } }}>
+      <Typography
+        variant={isSmallScreen ? 'h5' : 'h4'}
+        gutterBottom
+        sx={{
+          mb: { xs: 2, md: 3 },
+          fontWeight: 600,
+          textAlign: { xs: 'center', md: 'left' },
+        }}
+      >
         Users Management
       </Typography>
 
-      {/* API Information */}
-      <Alert severity={usersWithoutIds > 0 ? 'warning' : 'info'} sx={{ mb: 3 }}>
-        <Typography variant="body2">
-          <strong>Admin Controls:</strong> You can disable users (prevent login) and delete users from the system.
-          <br/>
-          <em>Note: Backend API (PATCH /user/:id/disable) currently only supports disabling users. Enabling might require backend update.</em>
-          {usersWithoutIds > 0 && (
-            <><br/><strong style={{color: 'red'}}>⚠️ Warning: {usersWithoutIds} user(s) have missing IDs and cannot be modified. Check console for details.</strong></>
-          )}
-        </Typography>
-      </Alert>
-
       {/* Filters */}
-      <Paper sx={{ p: 3, mb: 3 }}>
+      <Paper sx={{ p: { xs: 2, md: 3 }, mb: { xs: 2, md: 3 } }}>
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} md={5}>
             <TextField
@@ -453,6 +376,7 @@ const UsersPage = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyPress={handleSearch}
+              size={isSmallScreen ? 'small' : 'medium'}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -461,7 +385,13 @@ const UsersPage = () => {
                 ),
                 endAdornment: searchTerm && (
                   <InputAdornment position="end">
-                    <IconButton size="small" onClick={() => { setSearchTerm(''); setPage(0); }}>
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        setSearchTerm('');
+                        setPage(0);
+                      }}
+                    >
                       <ClearIcon />
                     </IconButton>
                   </InputAdornment>
@@ -470,28 +400,33 @@ const UsersPage = () => {
             />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <FormControl fullWidth>
+            <FormControl fullWidth size={isSmallScreen ? 'small' : 'medium'}>
               <InputLabel>User Type</InputLabel>
               <Select
                 value={filterType}
                 label="User Type"
-                onChange={(e) => { setFilterType(e.target.value); setPage(0); }}
+                onChange={(e) => {
+                  setFilterType(e.target.value);
+                  setPage(0);
+                }}
               >
                 <MenuItem value="all">All Types</MenuItem>
                 <MenuItem value="admin">Admin</MenuItem>
-                <MenuItem value="seller">Seller</MenuItem>
+                <MenuItem value="vender">Vender</MenuItem>
                 <MenuItem value="buyer">Buyer</MenuItem>
-                <MenuItem value="user">User</MenuItem>
               </Select>
             </FormControl>
           </Grid>
           <Grid item xs={12} sm={6} md={2}>
-            <FormControl fullWidth>
+            <FormControl fullWidth size={isSmallScreen ? 'small' : 'medium'}>
               <InputLabel>Status</InputLabel>
               <Select
                 value={filterStatus}
                 label="Status"
-                onChange={(e) => { setFilterStatus(e.target.value); setPage(0); }}
+                onChange={(e) => {
+                  setFilterStatus(e.target.value);
+                  setPage(0);
+                }}
               >
                 <MenuItem value="all">All Status</MenuItem>
                 <MenuItem value="active">Available</MenuItem>
@@ -505,6 +440,7 @@ const UsersPage = () => {
               variant="outlined"
               startIcon={<FilterIcon />}
               onClick={handleClearFilters}
+              size={isSmallScreen ? 'small' : 'medium'}
             >
               Clear
             </Button>
@@ -513,16 +449,36 @@ const UsersPage = () => {
       </Paper>
 
       {/* Users Table */}
-      <Paper sx={{ width: '100%', overflow: 'hidden' }}>
-        <TableContainer sx={{ maxHeight: 440 }}>
-          <Table stickyHeader>
+      <Paper
+        sx={{
+          width: '100%',
+          overflowX: 'auto', // 小屏允许横向滚动
+        }}
+      >
+        <TableContainer
+          sx={{
+            maxHeight: isSmallScreen ? 360 : 440,
+          }}
+        >
+          <Table
+            stickyHeader
+            size={isSmallScreen ? 'small' : 'medium'}
+            sx={{
+              minWidth: 650, // 防止被挤得太窄
+            }}
+          >
             <TableHead>
               <TableRow>
                 <TableCell sx={{ fontWeight: 600 }}>User</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Address</TableCell>
+                {/* 地址列在特别窄的屏幕可以隐藏掉 */}
+                <TableCell
+                  sx={{ fontWeight: 600, display: { xs: 'none', sm: 'table-cell' } }}
+                >
+                  Address
+                </TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -560,7 +516,10 @@ const UsersPage = () => {
                           <Typography variant="body2" sx={{ fontWeight: 500 }}>
                             {user.username}
                           </Typography>
-                          <Typography variant="caption" color={user.id ? 'text.secondary' : 'error'}>
+                          <Typography
+                            variant="caption"
+                            color={user.id ? 'text.secondary' : 'error'}
+                          >
                             ID: {user.id ? user.id.substring(0, 8) + '...' : '⚠️ NO ID'}
                           </Typography>
                         </Box>
@@ -588,7 +547,13 @@ const UsersPage = () => {
                           size="small"
                           variant="outlined"
                         />
-                        <Tooltip title={user.status === 'active' ? 'Disable user (prevent login)' : 'Enable user (allow login)'}>
+                        <Tooltip
+                          title={
+                            user.status === 'active'
+                              ? 'Disable user (prevent login)'
+                              : 'Enable user (allow login)'
+                          }
+                        >
                           <span>
                             <Switch
                               size="small"
@@ -601,7 +566,9 @@ const UsersPage = () => {
                         </Tooltip>
                       </Box>
                     </TableCell>
-                    <TableCell>
+                    <TableCell
+                      sx={{ display: { xs: 'none', sm: 'table-cell' } }}
+                    >
                       <Typography variant="body2" color="text.secondary">
                         {user.address}
                       </Typography>
@@ -611,7 +578,7 @@ const UsersPage = () => {
                         size="small"
                         onClick={() => handleDeleteUser(user)}
                         color="error"
-                        title={user.id ? "Delete User" : "Cannot delete - No user ID"}
+                        title={user.id ? 'Delete User' : 'Cannot delete - No user ID'}
                         disabled={deleting || !user.id || user.id === ''}
                       >
                         <DeleteIcon fontSize="small" />
@@ -659,7 +626,11 @@ const UsersPage = () => {
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
               <strong>Type:</strong> {selectedUser?.type}
             </Typography>
-            <Typography variant="body2" color={selectedUser?.id ? 'text.secondary' : 'error'} sx={{ fontWeight: selectedUser?.id ? 'normal' : 'bold' }}>
+            <Typography
+              variant="body2"
+              color={selectedUser?.id ? 'text.secondary' : 'error'}
+              sx={{ fontWeight: selectedUser?.id ? 'normal' : 'bold' }}
+            >
               <strong>User ID:</strong> {selectedUser?.id || '⚠️ MISSING - Cannot delete'}
             </Typography>
           </Box>

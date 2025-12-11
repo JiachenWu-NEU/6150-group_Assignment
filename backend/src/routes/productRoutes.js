@@ -366,6 +366,8 @@ router.get("/all", productController.getAllProducts);
  *                       type: string
  *                     sellerId:
  *                       type: string
+ *                     sellerAddress:
+ *                       type: string
  *                     name:
  *                       type: string
  *                     price:
