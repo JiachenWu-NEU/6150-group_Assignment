@@ -382,5 +382,54 @@ router.get("/all", productController.getAllProducts);
  *         description: Internal server error
  */
 router.get("/detail/:id", productController.getProductById);
+/**
+ * @openapi
+ * /product/my:
+ *   get:
+ *     summary: Get all products of current seller (vender only)
+ *     tags:
+ *       - Product
+ *     parameters:
+ *       - in: header
+ *         name: Authorization
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Bearer token of vender user
+ *     responses:
+ *       200:
+ *         description: Get vender products successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *                       price:
+ *                         type: number
+ *                       imagePath:
+ *                         type: string
+ *                       description:
+ *                         type: string
+ *                       isOnSale:
+ *                         type: boolean
+ *       401:
+ *         description: Unauthorized (missing or invalid token)
+ *       403:
+ *         description: Forbidden (not vender)
+ *       500:
+ *         description: Internal server error
+ */
+router.get("/my", auth, productController.getMyProducts);
 
 module.exports = router;

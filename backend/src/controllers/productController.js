@@ -311,3 +311,36 @@ exports.getProductById = async (req, res) => {
     return res.status(500).json({ error: "Internal server error." });
   }
 };
+
+exports.getMyProducts = async (req, res) => {
+  try {
+    const { userId, type } = req.user || {};
+
+    if (type !== "vender") {
+      return res
+        .status(403)
+        .json({ error: "Only vender can view own products." });
+    }
+
+    const products = await Product.find({ sellerId: userId }).sort({
+      createdAt: -1,
+    });
+
+    const result = products.map((p) => ({
+      id: p._id,
+      name: p.name,
+      price: p.price,
+      imagePath: p.imagePath,
+      description: p.description,
+      isOnSale: p.isOnSale,
+    }));
+
+    return res.status(200).json({
+      message: "Get vender products successfully.",
+      data: result,
+    });
+  } catch (err) {
+    console.error("Error in getMyProducts:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+};
