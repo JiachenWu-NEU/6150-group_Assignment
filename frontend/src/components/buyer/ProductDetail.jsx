@@ -27,6 +27,7 @@ import {
   Person as PersonIcon,
   ArrowBack as ArrowBackIcon,
   Chat as ChatIcon,
+  
 } from "@mui/icons-material";
 import { useNavigate, useParams } from "react-router-dom";
 import { getProductById, addToCart } from "../../services/buyerApi";

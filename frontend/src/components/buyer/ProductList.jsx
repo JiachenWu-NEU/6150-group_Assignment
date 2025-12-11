@@ -26,6 +26,7 @@ import {
   Person as PersonIcon,
   Logout as LogoutIcon,
   Chat as ChatIcon,
+  ShoppingBag as ShoppingBagIcon,
 } from "@mui/icons-material";
 import { getUserInfo, logout } from "../../utils/auth";
 import { getProducts, addToCart } from "../../services/buyerApi";
@@ -192,6 +193,14 @@ function ProductList() {
               sx={{ mr: 2 }}
             />
           )}
+
+          <IconButton
+            color="inherit"
+            onClick={() => navigate("/orders")}
+            sx={{ mr: 1 }}
+          >
+            <ShoppingBagIcon />
+          </IconButton>
 
           {/* AI Chatbot Button - 添加这个 */}
           <IconButton
