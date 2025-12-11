@@ -3,10 +3,10 @@ import { getAuthToken } from "../utils/auth";
 
 // ==================== 卖家商品管理 ====================
 
-// 获取卖家自己的所有商品
+
 export const getMyProducts = async () => {
   const token = getAuthToken();
-  const response = await fetch(`${API_BASE_URL}/product/all`, {
+  const response = await fetch(`${API_BASE_URL}/product/my`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
