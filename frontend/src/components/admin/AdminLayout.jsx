@@ -1,5 +1,5 @@
 import React from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Box,
   Drawer,
@@ -15,6 +15,11 @@ import {
   Divider,
   useTheme,
   useMediaQuery,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -30,19 +35,44 @@ const drawerWidth = 240;
 
 const AdminLayout = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [mobileOpen, setMobileOpen] = React.useState(false);
+  const [logoutDialogOpen, setLogoutDialogOpen] = React.useState(false);
 
   const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, path: '/admin' },
     { text: 'Products', icon: <ProductsIcon />, path: '/admin/products' },
     { text: 'Users', icon: <UsersIcon />, path: '/admin/users' },
-    { text: 'Settings', icon: <SettingsIcon />, path: '/admin/settings' },
   ];
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
+  };
+
+  const handleLogoutClick = () => {
+    setLogoutDialogOpen(true);
+  };
+
+  const handleLogoutConfirm = () => {
+    // Clear authentication data
+    localStorage.removeItem('token');
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('userToken');
+    localStorage.removeItem('user');
+    localStorage.removeItem('isAdmin');
+    
+    // Clear session storage as well
+    sessionStorage.clear();
+    
+    // Redirect to login page
+    navigate('/login');
+    
+    setLogoutDialogOpen(false);
+  };
+
+  const handleLogoutCancel = () => {
+    setLogoutDialogOpen(false);
   };
 
   const drawer = (
@@ -87,11 +117,17 @@ const AdminLayout = () => {
         <Divider sx={{ mb: 2 }} />
         <ListItem 
           button 
-          onClick={() => console.log('Logout')}
+          onClick={handleLogoutClick}
           sx={{
             borderRadius: 1,
             '&:hover': {
-              backgroundColor: 'action.hover',
+              backgroundColor: 'error.light',
+              '& .MuiListItemIcon-root': {
+                color: 'error.main',
+              },
+              '& .MuiListItemText-primary': {
+                color: 'error.main',
+              },
             },
           }}
         >
@@ -124,9 +160,6 @@ const AdminLayout = () => {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            {menuItems.find(item => item.path === location.pathname)?.text || 'Admin Dashboard'}
-          </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Avatar 
               sx={{ 
@@ -202,6 +235,24 @@ const AdminLayout = () => {
       >
         <Outlet />
       </Box>
+
+      {/* Logout Confirmation Dialog */}
+      <Dialog open={logoutDialogOpen} onClose={handleLogoutCancel}>
+        <DialogTitle>Confirm Logout</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to logout from the admin panel?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleLogoutCancel} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleLogoutConfirm} color="error" variant="contained">
+            Logout
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

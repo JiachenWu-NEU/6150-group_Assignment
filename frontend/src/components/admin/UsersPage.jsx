@@ -29,18 +29,16 @@ import {
   Alert,
   Snackbar,
   Switch,
-  FormControlLabel,
+  Tooltip,
 } from '@mui/material';
 import {
   Search as SearchIcon,
-  Edit as EditIcon,
   Delete as DeleteIcon,
-  Block as BlockIcon,
-  CheckCircle as CheckIcon,
   Clear as ClearIcon,
   FilterList as FilterIcon,
   Email as EmailIcon,
-  Person as PersonIcon,
+  CheckCircle as ActiveIcon,
+  Cancel as InactiveIcon,
 } from '@mui/icons-material';
 import { request } from '../../services/api';
 
@@ -51,171 +49,312 @@ const UsersPage = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterRole, setFilterRole] = useState('all');
+  const [filterType, setFilterType] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [totalUsers, setTotalUsers] = useState(0);
   
   // Dialog states
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [deleting, setDeleting] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState({}); // Track which users are being updated
 
-  // Mock data for demonstration
-  const mockUsers = [
-    {
-      id: '1',
-      username: 'john_doe',
-      email: 'john@example.com',
-      role: 'user',
-      status: 'active',
-      joinedDate: '2023-05-15',
-      listings: 12,
-      purchases: 45,
-      rating: 4.8,
-      avatar: 'JD',
-    },
-    {
-      id: '2',
-      username: 'jane_smith',
-      email: 'jane@example.com',
-      role: 'user',
-      status: 'active',
-      joinedDate: '2023-06-20',
-      listings: 8,
-      purchases: 32,
-      rating: 4.9,
-      avatar: 'JS',
-    },
-    {
-      id: '3',
-      username: 'admin_user',
-      email: 'admin@example.com',
-      role: 'admin',
-      status: 'active',
-      joinedDate: '2023-01-10',
-      listings: 0,
-      purchases: 0,
-      rating: 5.0,
-      avatar: 'AU',
-    },
-    {
-      id: '4',
-      username: 'tech_guru',
-      email: 'tech@example.com',
-      role: 'user',
-      status: 'suspended',
-      joinedDate: '2023-03-05',
-      listings: 25,
-      purchases: 67,
-      rating: 4.5,
-      avatar: 'TG',
-    },
-    {
-      id: '5',
-      username: 'sneaker_head',
-      email: 'sneaker@example.com',
-      role: 'vendor',
-      status: 'active',
-      joinedDate: '2023-08-15',
-      listings: 50,
-      purchases: 12,
-      rating: 4.7,
-      avatar: 'SH',
-    },
-    {
-      id: '6',
-      username: 'book_worm',
-      email: 'books@example.com',
-      role: 'user',
-      status: 'inactive',
-      joinedDate: '2023-02-28',
-      listings: 5,
-      purchases: 18,
-      rating: 4.6,
-      avatar: 'BW',
-    },
-  ];
-
-  // Fetch users (using mock data for now)
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        setLoading(true);
-        // In real application, use: const data = await request('/admin/users');
-        // For now, simulate API call
-        setTimeout(() => {
-          setUsers(mockUsers);
-          setLoading(false);
-        }, 500);
-      } catch (err) {
-        setError('Failed to load users');
-        setLoading(false);
+  // Fetch users from backend API
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const url = '/user/all';
+      const response = await request(url);
+      
+      console.log('=== FETCH USERS DEBUG ===');
+      console.log('Full API Response:', response);
+      console.log('Response data:', response.data);
+      
+      const apiUsers = response.data || [];
+      
+      if (apiUsers.length > 0) {
+        console.log('First user (raw from API):', apiUsers[0]);
+        console.log('All keys in first user:', Object.keys(apiUsers[0]));
       }
-    };
+      
+      // Map API fields - try multiple possible ID field names
+      const formattedUsers = apiUsers.map((user, index) => {
+        // Try to find ID from various possible field names
+        const userId = user._id || user.id || user.userId || user.user_id || user.ID;
+        
+        console.log(`User ${index} mapping:`, {
+          raw_user: user,
+          extracted_id: userId,
+          username: user.username
+        });
+        
+        if (!userId) {
+          console.error(`❌ User ${index} has NO valid ID!`, user);
+        }
+        
+        return {
+          id: userId || '',
+          username: user.username || '',
+          email: user.email || '',
+          type: user.type || 'user',
+          status: user.isAvailable ? 'active' : 'inactive',
+          address: user.address || 'N/A',
+          avatar: user.username ? user.username.substring(0, 2).toUpperCase() : 'U',
+        };
+      });
+      
+      console.log('Formatted users (first 3):', formattedUsers.slice(0, 3));
+      console.log('Users without IDs:', formattedUsers.filter(u => !u.id));
+      
+      setUsers(formattedUsers);
+      setTotalUsers(formattedUsers.length);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching users:', err);
+      setError(err.message || 'Failed to load users');
+      setLoading(false);
+      setSnackbar({
+        open: true,
+        message: err.message || 'Failed to load users',
+        severity: 'error'
+      });
+    }
+  };
 
+  useEffect(() => {
     fetchUsers();
   }, []);
 
-  // Filter users
+  // Client-side filtering
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = filterRole === 'all' || user.role === filterRole;
+    const matchesSearch = !searchTerm || 
+      user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesType = filterType === 'all' || user.type === filterType;
     const matchesStatus = filterStatus === 'all' || user.status === filterStatus;
     
-    return matchesSearch && matchesRole && matchesStatus;
+    return matchesSearch && matchesType && matchesStatus;
   });
 
-  const handleEditUser = (user) => {
-    setSelectedUser(user);
-    setEditDialogOpen(true);
+  // Calculate pagination for filtered results
+  const paginatedUsers = filteredUsers.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  const handleToggleUserStatus = async (user) => {
+    if (!user.id) {
+      setSnackbar({
+        open: true,
+        message: 'Cannot update user status - User ID is missing',
+        severity: 'error'
+      });
+      return;
+    }
+
+    // Set loading state for this specific user
+    setUpdatingStatus(prev => ({ ...prev, [user.id]: true }));
+
+    try {
+      const newStatus = user.status === 'active' ? 'inactive' : 'active';
+      
+      console.log('=== UPDATE USER STATUS ===');
+      console.log('User:', user.username);
+      console.log('User ID:', user.id);
+      console.log('Current status:', user.status);
+      console.log('Attempting to change to:', newStatus);
+      
+      if (newStatus === 'inactive') {
+        // Disable user using PATCH /user/:id/disable
+        const disableUrl = `/user/${user.id}/disable`;
+        console.log('Disabling user with URL:', disableUrl);
+        
+        const response = await request(disableUrl, {
+          method: 'PATCH'
+        });
+        
+        console.log('Disable successful:', response);
+        
+        // Update local state
+        setUsers(prevUsers => 
+          prevUsers.map(u => 
+            u.id === user.id 
+              ? { ...u, status: 'inactive' }
+              : u
+          )
+        );
+        
+        setSnackbar({
+          open: true,
+          message: `User "${user.username}" has been disabled (cannot login)`,
+          severity: 'success'
+        });
+        
+      } else {
+        // Enable user - this endpoint might not exist
+        // Try using PUT /user/:id with isAvailable: true
+        const enableUrl = `/user/${user.id}/disable`;
+        console.log('Attempting to enable user with URL:', enableUrl);
+        
+        try {
+          const response = await request(enableUrl, {
+            method: 'PATCH'
+          });
+          
+          console.log('Enable successful:', response);
+          
+          // Update local state
+          setUsers(prevUsers => 
+            prevUsers.map(u => 
+              u.id === user.id 
+                ? { ...u, status: 'active' }
+                : u
+            )
+          );
+          
+          setSnackbar({
+            open: true,
+            message: `User "${user.username}" has been enabled (can login)`,
+            severity: 'success'
+          });
+        } catch (enableErr) {
+          console.error('Enable endpoint not available:', enableErr);
+          setSnackbar({
+            open: true,
+            message: 'Cannot enable user - backend only supports disabling users. Contact backend developer to add enable endpoint.',
+            severity: 'warning'
+          });
+        }
+      }
+      
+    } catch (err) {
+      console.error('=== UPDATE STATUS ERROR ===');
+      console.error('Full error:', err);
+      console.error('Error message:', err.message);
+      console.error('Error response:', err.response);
+      
+      let errorMessage = 'Failed to update user status';
+      
+      if (err.response?.status === 404) {
+        errorMessage = `Endpoint not found (404). Please verify the backend route configuration.`;
+      } else if (err.response?.status === 403) {
+        errorMessage = 'Permission denied (403). Admin access required.';
+      } else if (err.response?.status === 401) {
+        errorMessage = 'Unauthorized (401). Please log in as admin.';
+      } else if (err.response?.status === 400) {
+        errorMessage = err.response.data?.message || 'Bad request (400).';
+      } else if (err.response) {
+        errorMessage = err.response.data?.message || `Server error (${err.response.status})`;
+      } else {
+        errorMessage = err.message || errorMessage;
+      }
+      
+      setSnackbar({
+        open: true,
+        message: errorMessage,
+        severity: 'error'
+      });
+    } finally {
+      // Clear loading state
+      setUpdatingStatus(prev => {
+        const newState = { ...prev };
+        delete newState[user.id];
+        return newState;
+      });
+    }
   };
 
   const handleDeleteUser = (user) => {
+    console.log('handleDeleteUser called with:', user);
+    
+    if (!user.id || user.id === '') {
+      setSnackbar({
+        open: true,
+        message: `Cannot delete user "${user.username}" - User ID is missing. Check console for details.`,
+        severity: 'error'
+      });
+      return;
+    }
+    
     setSelectedUser(user);
     setDeleteDialogOpen(true);
   };
 
-  const handleToggleStatus = async (userId, currentStatus) => {
+  const confirmDelete = async () => {
+    if (!selectedUser || !selectedUser.id) {
+      console.error('Cannot delete - selectedUser:', selectedUser);
+      setSnackbar({
+        open: true,
+        message: 'Invalid user ID. Cannot delete user.',
+        severity: 'error'
+      });
+      return;
+    }
+    
+    setDeleting(true);
+    
     try {
-      const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-      // In real application: await request(`/admin/users/${userId}/status`, { 
-      //   method: 'PUT', 
-      //   body: JSON.stringify({ status: newStatus }) 
-      // });
-      setUsers(users.map(u => u.id === userId ? { ...u, status: newStatus } : u));
+      console.log('=== DELETE USER DEBUG ===');
+      console.log('Selected user:', selectedUser);
+      console.log('User ID:', selectedUser.id);
+      console.log('User ID type:', typeof selectedUser.id);
+      
+      const deleteUrl = `/user/${selectedUser.id}`;
+      console.log('DELETE URL:', deleteUrl);
+      
+      const response = await request(deleteUrl, {
+        method: 'DELETE',
+      });
+      
+      console.log('Delete successful:', response);
+      
+      // Remove from local state
+      setUsers(prevUsers => prevUsers.filter(u => u.id !== selectedUser.id));
+      setTotalUsers(prev => prev - 1);
+      
       setSnackbar({ 
         open: true, 
-        message: `User ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully`, 
+        message: `User "${selectedUser.username}" deleted successfully`, 
         severity: 'success' 
       });
-    } catch (err) {
-      setSnackbar({ open: true, message: 'Failed to update user status', severity: 'error' });
-    }
-  };
-
-  const confirmDelete = async () => {
-    try {
-      // In real application: await request(`/admin/users/${selectedUser.id}`, { method: 'DELETE' });
-      setUsers(users.filter(u => u.id !== selectedUser.id));
-      setSnackbar({ open: true, message: 'User deleted successfully', severity: 'success' });
+      
       setDeleteDialogOpen(false);
+      setSelectedUser(null);
+      
     } catch (err) {
-      setSnackbar({ open: true, message: 'Failed to delete user', severity: 'error' });
-    }
-  };
-
-  const handleSaveUser = async (userData) => {
-    try {
-      // In real application: await request(`/admin/users/${selectedUser.id}`, { 
-      //   method: 'PUT', 
-      //   body: JSON.stringify(userData) 
-      // });
-      setUsers(users.map(u => u.id === selectedUser.id ? { ...u, ...userData } : u));
-      setSnackbar({ open: true, message: 'User updated successfully', severity: 'success' });
-      setEditDialogOpen(false);
-    } catch (err) {
-      setSnackbar({ open: true, message: 'Failed to update user', severity: 'error' });
+      console.error('=== DELETE ERROR ===');
+      console.error('Error:', err);
+      console.error('Response:', err.response);
+      console.error('Status:', err.response?.status);
+      console.error('Data:', err.response?.data);
+      
+      let errorMessage = 'Failed to delete user';
+      
+      if (err.response?.status === 404) {
+        errorMessage = `User not found (404). Attempted URL: /user/${selectedUser.id}. Check if the user ID is correct.`;
+      } else if (err.response?.status === 403) {
+        errorMessage = 'Permission denied (403). You need admin privileges.';
+      } else if (err.response?.status === 401) {
+        errorMessage = 'Unauthorized (401). Please log in as admin.';
+      } else if (err.response) {
+        errorMessage = err.response.data?.message || `Server error (${err.response.status})`;
+      } else if (err.request) {
+        errorMessage = 'No response from server.';
+      } else {
+        errorMessage = err.message || errorMessage;
+      }
+      
+      setSnackbar({ 
+        open: true, 
+        message: errorMessage, 
+        severity: 'error' 
+      });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -230,38 +369,36 @@ const UsersPage = () => {
 
   const handleClearFilters = () => {
     setSearchTerm('');
-    setFilterRole('all');
+    setFilterType('all');
     setFilterStatus('all');
+    setPage(0);
   };
 
-  const getRoleColor = (role) => {
-    switch (role) {
+  const handleSearch = (e) => {
+    if (e.key === 'Enter') {
+      setPage(0);
+    }
+  };
+
+  const getTypeColor = (type) => {
+    switch (type) {
       case 'admin': return 'error';
-      case 'vendor': return 'warning';
+      case 'seller': return 'warning';
+      case 'buyer': return 'info';
       case 'user': return 'success';
       default: return 'default';
     }
   };
 
   const getStatusColor = (status) => {
-    switch (status) {
-      case 'active': return 'success';
-      case 'suspended': return 'warning';
-      case 'inactive': return 'error';
-      default: return 'default';
-    }
+    return status === 'active' ? 'success' : 'error';
   };
 
   const getStatusIcon = (status) => {
-    switch (status) {
-      case 'active': return <CheckIcon fontSize="small" />;
-      case 'suspended': return <BlockIcon fontSize="small" />;
-      case 'inactive': return <BlockIcon fontSize="small" />;
-      default: return null;
-    }
+    return status === 'active' ? <ActiveIcon fontSize="small" /> : <InactiveIcon fontSize="small" />;
   };
 
-  if (loading) {
+  if (loading && page === 0) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
         <CircularProgress />
@@ -269,21 +406,53 @@ const UsersPage = () => {
     );
   }
 
+  if (error && users.length === 0) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+        <Button 
+          variant="contained" 
+          onClick={fetchUsers}
+        >
+          Retry
+        </Button>
+      </Box>
+    );
+  }
+
+  // Count users without IDs
+  const usersWithoutIds = users.filter(u => !u.id || u.id === '').length;
+
   return (
     <Box>
       <Typography variant="h4" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
         Users Management
       </Typography>
 
+      {/* API Information */}
+      <Alert severity={usersWithoutIds > 0 ? 'warning' : 'info'} sx={{ mb: 3 }}>
+        <Typography variant="body2">
+          <strong>Admin Controls:</strong> You can disable users (prevent login) and delete users from the system.
+          <br/>
+          <em>Note: Backend API (PATCH /user/:id/disable) currently only supports disabling users. Enabling might require backend update.</em>
+          {usersWithoutIds > 0 && (
+            <><br/><strong style={{color: 'red'}}>⚠️ Warning: {usersWithoutIds} user(s) have missing IDs and cannot be modified. Check console for details.</strong></>
+          )}
+        </Typography>
+      </Alert>
+
       {/* Filters */}
       <Paper sx={{ p: 3, mb: 3 }}>
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={5}>
             <TextField
               fullWidth
-              placeholder="Search users..."
+              placeholder="Search by username or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyPress={handleSearch}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -292,7 +461,7 @@ const UsersPage = () => {
                 ),
                 endAdornment: searchTerm && (
                   <InputAdornment position="end">
-                    <IconButton size="small" onClick={() => setSearchTerm('')}>
+                    <IconButton size="small" onClick={() => { setSearchTerm(''); setPage(0); }}>
                       <ClearIcon />
                     </IconButton>
                   </InputAdornment>
@@ -302,31 +471,31 @@ const UsersPage = () => {
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <FormControl fullWidth>
-              <InputLabel>Role</InputLabel>
+              <InputLabel>User Type</InputLabel>
               <Select
-                value={filterRole}
-                label="Role"
-                onChange={(e) => setFilterRole(e.target.value)}
+                value={filterType}
+                label="User Type"
+                onChange={(e) => { setFilterType(e.target.value); setPage(0); }}
               >
-                <MenuItem value="all">All Roles</MenuItem>
+                <MenuItem value="all">All Types</MenuItem>
                 <MenuItem value="admin">Admin</MenuItem>
-                <MenuItem value="vendor">Vendor</MenuItem>
+                <MenuItem value="seller">Seller</MenuItem>
+                <MenuItem value="buyer">Buyer</MenuItem>
                 <MenuItem value="user">User</MenuItem>
               </Select>
             </FormControl>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={2}>
             <FormControl fullWidth>
               <InputLabel>Status</InputLabel>
               <Select
                 value={filterStatus}
                 label="Status"
-                onChange={(e) => setFilterStatus(e.target.value)}
+                onChange={(e) => { setFilterStatus(e.target.value); setPage(0); }}
               >
                 <MenuItem value="all">All Status</MenuItem>
-                <MenuItem value="active">Active</MenuItem>
-                <MenuItem value="suspended">Suspended</MenuItem>
-                <MenuItem value="inactive">Inactive</MenuItem>
+                <MenuItem value="active">Available</MenuItem>
+                <MenuItem value="inactive">Unavailable</MenuItem>
               </Select>
             </FormControl>
           </Grid>
@@ -337,7 +506,7 @@ const UsersPage = () => {
               startIcon={<FilterIcon />}
               onClick={handleClearFilters}
             >
-              Clear Filters
+              Clear
             </Button>
           </Grid>
         </Grid>
@@ -351,20 +520,28 @@ const UsersPage = () => {
               <TableRow>
                 <TableCell sx={{ fontWeight: 600 }}>User</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Role</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Joined</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Listings</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Purchases</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Rating</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Address</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredUsers
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((user) => (
-                  <TableRow hover key={user.id}>
+              {loading && users.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center">
+                    <CircularProgress size={24} />
+                  </TableCell>
+                </TableRow>
+              ) : paginatedUsers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center">
+                    <Typography color="text.secondary">No users found</Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                paginatedUsers.map((user, index) => (
+                  <TableRow hover key={user.id || `user-${index}`}>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <Avatar
@@ -372,8 +549,9 @@ const UsersPage = () => {
                             width: 40, 
                             height: 40, 
                             mr: 2,
-                            bgcolor: user.role === 'admin' ? 'error.main' : 
-                                    user.role === 'vendor' ? 'warning.main' : 'primary.main'
+                            bgcolor: user.type === 'admin' ? 'error.main' : 
+                                    user.type === 'seller' ? 'warning.main' : 
+                                    user.type === 'buyer' ? 'info.main' : 'primary.main'
                           }}
                         >
                           {user.avatar}
@@ -382,8 +560,8 @@ const UsersPage = () => {
                           <Typography variant="body2" sx={{ fontWeight: 500 }}>
                             {user.username}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            ID: {user.id}
+                          <Typography variant="caption" color={user.id ? 'text.secondary' : 'error'}>
+                            ID: {user.id ? user.id.substring(0, 8) + '...' : '⚠️ NO ID'}
                           </Typography>
                         </Box>
                       </Box>
@@ -391,13 +569,13 @@ const UsersPage = () => {
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <EmailIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
-                        {user.email}
+                        <Typography variant="body2">{user.email}</Typography>
                       </Box>
                     </TableCell>
                     <TableCell>
                       <Chip 
-                        label={user.role.charAt(0).toUpperCase() + user.role.slice(1)} 
-                        color={getRoleColor(user.role)}
+                        label={user.type.charAt(0).toUpperCase() + user.type.slice(1)} 
+                        color={getTypeColor(user.type)}
                         size="small"
                       />
                     </TableCell>
@@ -405,63 +583,48 @@ const UsersPage = () => {
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Chip
                           icon={getStatusIcon(user.status)}
-                          label={user.status.charAt(0).toUpperCase() + user.status.slice(1)}
+                          label={user.status === 'active' ? 'Available' : 'Unavailable'}
                           color={getStatusColor(user.status)}
                           size="small"
                           variant="outlined"
                         />
-                        <Switch
-                          size="small"
-                          checked={user.status === 'active'}
-                          onChange={() => handleToggleStatus(user.id, user.status)}
-                          color="success"
-                        />
+                        <Tooltip title={user.status === 'active' ? 'Disable user (prevent login)' : 'Enable user (allow login)'}>
+                          <span>
+                            <Switch
+                              size="small"
+                              checked={user.status === 'active'}
+                              onChange={() => handleToggleUserStatus(user)}
+                              disabled={!user.id || updatingStatus[user.id]}
+                              color="success"
+                            />
+                          </span>
+                        </Tooltip>
                       </Box>
                     </TableCell>
-                    <TableCell>{user.joinedDate}</TableCell>
                     <TableCell>
-                      <Typography sx={{ fontWeight: 500, color: 'primary.main' }}>
-                        {user.listings}
+                      <Typography variant="body2" color="text.secondary">
+                        {user.address}
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <Typography sx={{ fontWeight: 500, color: 'success.main' }}>
-                        {user.purchases}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip 
-                        label={user.rating.toFixed(1)} 
-                        size="small"
-                        variant="outlined"
-                        color={user.rating >= 4.5 ? 'success' : user.rating >= 4.0 ? 'warning' : 'error'}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleEditUser(user)}
-                        color="primary"
-                        title="Edit"
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
                       <IconButton
                         size="small"
                         onClick={() => handleDeleteUser(user)}
                         color="error"
-                        title="Delete"
+                        title={user.id ? "Delete User" : "Cannot delete - No user ID"}
+                        disabled={deleting || !user.id || user.id === ''}
                       >
                         <DeleteIcon fontSize="small" />
                       </IconButton>
                     </TableCell>
                   </TableRow>
-                ))}
+                ))
+              )}
             </TableBody>
           </Table>
         </TableContainer>
         <TablePagination
-          rowsPerPageOptions={[5, 10, 25]}
+          rowsPerPageOptions={[5, 10, 25, 50]}
           component="div"
           count={filteredUsers.length}
           rowsPerPage={rowsPerPage}
@@ -471,90 +634,51 @@ const UsersPage = () => {
         />
       </Paper>
 
-      {/* Edit User Dialog */}
-      <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Edit User</DialogTitle>
-        <DialogContent>
-          {selectedUser && (
-            <Box sx={{ pt: 2 }}>
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Username"
-                    defaultValue={selectedUser.username}
-                    variant="outlined"
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <PersonIcon />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Email"
-                    type="email"
-                    defaultValue={selectedUser.email}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <EmailIcon />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth>
-                    <InputLabel>Role</InputLabel>
-                    <Select defaultValue={selectedUser.role} label="Role">
-                      <MenuItem value="admin">Admin</MenuItem>
-                      <MenuItem value="vendor">Vendor</MenuItem>
-                      <MenuItem value="user">User</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth>
-                    <InputLabel>Status</InputLabel>
-                    <Select defaultValue={selectedUser.status} label="Status">
-                      <MenuItem value="active">Active</MenuItem>
-                      <MenuItem value="suspended">Suspended</MenuItem>
-                      <MenuItem value="inactive">Inactive</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-              </Grid>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
-          <Button 
-            variant="contained" 
-            onClick={() => handleSaveUser(selectedUser)}
-          >
-            Save Changes
-          </Button>
-        </DialogActions>
-      </Dialog>
-
       {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+      <Dialog 
+        open={deleteDialogOpen} 
+        onClose={() => !deleting && setDeleteDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
-          <Typography>
-            Are you sure you want to delete user "{selectedUser?.username}"? This action cannot be undone.
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            <strong>Warning:</strong> This action cannot be undone!
+          </Alert>
+          <Typography sx={{ mb: 2 }}>
+            Are you sure you want to delete user <strong>"{selectedUser?.username}"</strong>?
           </Typography>
+          <Box sx={{ p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              <strong>Username:</strong> {selectedUser?.username}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              <strong>Email:</strong> {selectedUser?.email}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              <strong>Type:</strong> {selectedUser?.type}
+            </Typography>
+            <Typography variant="body2" color={selectedUser?.id ? 'text.secondary' : 'error'} sx={{ fontWeight: selectedUser?.id ? 'normal' : 'bold' }}>
+              <strong>User ID:</strong> {selectedUser?.id || '⚠️ MISSING - Cannot delete'}
+            </Typography>
+          </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-          <Button onClick={confirmDelete} color="error" variant="contained">
-            Delete
+          <Button 
+            onClick={() => setDeleteDialogOpen(false)}
+            disabled={deleting}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={confirmDelete} 
+            color="error" 
+            variant="contained"
+            disabled={deleting || !selectedUser?.id}
+            startIcon={deleting ? <CircularProgress size={16} /> : null}
+          >
+            {deleting ? 'Deleting...' : 'Delete User'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -562,7 +686,7 @@ const UsersPage = () => {
       {/* Snackbar for notifications */}
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={3000}
+        autoHideDuration={6000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >
@@ -570,6 +694,7 @@ const UsersPage = () => {
           onClose={() => setSnackbar({ ...snackbar, open: false })} 
           severity={snackbar.severity}
           variant="filled"
+          sx={{ width: '100%' }}
         >
           {snackbar.message}
         </Alert>

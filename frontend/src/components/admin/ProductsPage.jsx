@@ -48,149 +48,90 @@ const ProductsPage = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [filterCategory, setFilterCategory] = useState('all');
+  const [totalProducts, setTotalProducts] = useState(0);
   
-  // Dialog states
+  // Dialog states - kept for potential future use
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [editFormData, setEditFormData] = useState({});
 
-  // Mock data for demonstration
-  const mockProducts = [
-    {
-      id: '1',
-      title: 'iPhone 13 Pro',
-      category: 'Electronics',
-      price: 899.99,
-      condition: 'Like New',
-      status: 'active',
-      seller: 'john_doe',
-      location: 'New York',
-      createdAt: '2024-01-15',
-      views: 1234,
-      description: 'Like new condition, no scratches, original charger included.',
-    },
-    {
-      id: '2',
-      title: 'Sony PlayStation 5',
-      category: 'Gaming',
-      price: 499.99,
-      condition: 'Good',
-      status: 'active',
-      seller: 'jane_smith',
-      location: 'Los Angeles',
-      createdAt: '2024-01-20',
-      views: 2345,
-      description: 'Disc edition with two controllers.',
-    },
-    {
-      id: '3',
-      title: 'MacBook Pro 14"',
-      category: 'Computers',
-      price: 1599.99,
-      condition: 'Excellent',
-      status: 'sold',
-      seller: 'tech_guru',
-      location: 'San Francisco',
-      createdAt: '2024-01-10',
-      views: 3456,
-      description: 'M1 Pro chip, 16GB RAM, 512GB SSD.',
-    },
-    {
-      id: '4',
-      title: 'Canon EOS R6',
-      category: 'Cameras',
-      price: 1999.99,
-      condition: 'Good',
-      status: 'active',
-      seller: 'photo_enthusiast',
-      location: 'Chicago',
-      createdAt: '2024-01-05',
-      views: 4567,
-      description: 'Professional mirrorless camera with two lenses.',
-    },
-    {
-      id: '5',
-      title: 'Nike Air Jordan 1',
-      category: 'Fashion',
-      price: 249.99,
-      condition: 'New',
-      status: 'inactive',
-      seller: 'sneaker_head',
-      location: 'Miami',
-      createdAt: '2024-01-25',
-      views: 5678,
-      description: 'Brand new in box, size 10.',
-    },
-  ];
+  // Fetch products from backend API
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // API endpoint as shown in the documentation
+      const url = '/product/all';
+      
+      const response = await request(url);
+      
+      // API returns: { "message": "string", "data": [...] }
+      // Each product has: _id, sellerId, name, price, imagePath, description, isOnSale
+      const apiProducts = response.data || [];
+      
+      // Map API fields to component format
+      const formattedProducts = apiProducts.map(product => ({
+        id: product._id || '',
+        title: product.name || '',
+        category: 'General', // API doesn't provide category
+        price: product.price || 0,
+        condition: 'N/A', // API doesn't provide condition
+        status: product.isOnSale ? 'active' : 'inactive',
+        seller: product.sellerId || 'Unknown',
+        location: 'N/A', // API doesn't provide location
+        createdAt: product.createdAt 
+          ? new Date(product.createdAt).toISOString().split('T')[0]
+          : 'N/A',
+        views: 0, // API doesn't provide views
+        description: product.description || '',
+        imagePath: product.imagePath || '',
+      }));
+      
+      setProducts(formattedProducts);
+      setTotalProducts(formattedProducts.length);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching products:', err);
+      setError(err.message || 'Failed to load products');
+      setLoading(false);
+      setSnackbar({
+        open: true,
+        message: err.message || 'Failed to load products',
+        severity: 'error'
+      });
+    }
+  };
 
-  // Categories for filter
-  const categories = ['Electronics', 'Gaming', 'Computers', 'Cameras', 'Fashion', 'Furniture', 'Books', 'Sports'];
-
-  // Fetch products (using mock data for now)
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true);
-        // In real application, use: const data = await request('/admin/products');
-        // For now, simulate API call
-        setTimeout(() => {
-          setProducts(mockProducts);
-          setLoading(false);
-        }, 500);
-      } catch (err) {
-        setError('Failed to load products');
-        setLoading(false);
-      }
-    };
-
     fetchProducts();
-  }, []);
+  }, []); // Remove dependencies since API doesn't support filtering
 
-  // Filter products
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || product.status === filterStatus;
-    const matchesCategory = filterCategory === 'all' || product.category === filterCategory;
-    
-    return matchesSearch && matchesStatus && matchesCategory;
-  });
-
+  // Edit and delete disabled - backend API is read-only
   const handleEditProduct = (product) => {
-    setSelectedProduct(product);
-    setEditDialogOpen(true);
+    setSnackbar({
+      open: true,
+      message: 'Product editing is not available - API is read-only',
+      severity: 'info'
+    });
   };
 
   const handleDeleteProduct = (product) => {
-    setSelectedProduct(product);
-    setDeleteDialogOpen(true);
+    setSnackbar({
+      open: true,
+      message: 'Product deletion is not available - API is read-only',
+      severity: 'info'
+    });
   };
 
   const confirmDelete = async () => {
-    try {
-      // In real application: await request(`/admin/products/${selectedProduct.id}`, { method: 'DELETE' });
-      setProducts(products.filter(p => p.id !== selectedProduct.id));
-      setSnackbar({ open: true, message: 'Product deleted successfully', severity: 'success' });
-      setDeleteDialogOpen(false);
-    } catch (err) {
-      setSnackbar({ open: true, message: 'Failed to delete product', severity: 'error' });
-    }
+    setDeleteDialogOpen(false);
   };
 
-  const handleSaveProduct = async (productData) => {
-    try {
-      // In real application: await request(`/admin/products/${selectedProduct.id}`, { 
-      //   method: 'PUT', 
-      //   body: JSON.stringify(productData) 
-      // });
-      setProducts(products.map(p => p.id === selectedProduct.id ? { ...p, ...productData } : p));
-      setSnackbar({ open: true, message: 'Product updated successfully', severity: 'success' });
-      setEditDialogOpen(false);
-    } catch (err) {
-      setSnackbar({ open: true, message: 'Failed to update product', severity: 'error' });
-    }
+  const handleSaveProduct = async () => {
+    setEditDialogOpen(false);
   };
 
   const handleChangePage = (event, newPage) => {
@@ -205,13 +146,42 @@ const ProductsPage = () => {
   const handleClearFilters = () => {
     setSearchTerm('');
     setFilterStatus('all');
-    setFilterCategory('all');
+    setPage(0);
+  };
+
+  const handleSearch = (e) => {
+    if (e.key === 'Enter') {
+      setPage(0);
+    }
+  };
+
+  // Client-side filtering since API doesn't support it
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = !searchTerm || 
+      product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.description.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = filterStatus === 'all' || product.status === filterStatus;
+    
+    return matchesSearch && matchesStatus;
+  });
+
+  // Calculate pagination for filtered results
+  const paginatedProducts = filteredProducts.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  const handleEditFormChange = (field, value) => {
+    setEditFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
   const getStatusColor = (status) => {
     switch (status) {
       case 'active': return 'success';
-      case 'sold': return 'warning';
       case 'inactive': return 'error';
       default: return 'default';
     }
@@ -220,16 +190,31 @@ const ProductsPage = () => {
   const getStatusIcon = (status) => {
     switch (status) {
       case 'active': return <ActiveIcon fontSize="small" />;
-      case 'sold': return <ActiveIcon fontSize="small" color="warning" />;
       case 'inactive': return <InactiveIcon fontSize="small" />;
       default: return null;
     }
   };
 
-  if (loading) {
+  if (loading && page === 0) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
         <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error && products.length === 0) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+        <Button 
+          variant="contained" 
+          onClick={fetchProducts}
+        >
+          Retry
+        </Button>
       </Box>
     );
   }
@@ -240,15 +225,25 @@ const ProductsPage = () => {
         Products Management
       </Typography>
 
+      {/* API Information */}
+      <Alert severity="info" sx={{ mb: 3 }}>
+        <Typography variant="body2">
+          <strong>Read-Only Mode:</strong> Displaying all products from the database. 
+          The API ({`/product/all`}) returns: product ID, seller ID, name, price, image path, description, and sale status.
+          {filteredProducts.length < products.length && ` Showing ${filteredProducts.length} of ${products.length} products (filtered).`}
+        </Typography>
+      </Alert>
+
       {/* Filters */}
       <Paper sx={{ p: 3, mb: 3 }}>
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={6}>
             <TextField
               fullWidth
-              placeholder="Search products..."
+              placeholder="Search products by name or description..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyPress={handleSearch}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -257,7 +252,7 @@ const ProductsPage = () => {
                 ),
                 endAdornment: searchTerm && (
                   <InputAdornment position="end">
-                    <IconButton size="small" onClick={() => setSearchTerm('')}>
+                    <IconButton size="small" onClick={() => { setSearchTerm(''); setPage(0); }}>
                       <ClearIcon />
                     </IconButton>
                   </InputAdornment>
@@ -271,31 +266,15 @@ const ProductsPage = () => {
               <Select
                 value={filterStatus}
                 label="Status"
-                onChange={(e) => setFilterStatus(e.target.value)}
+                onChange={(e) => { setFilterStatus(e.target.value); setPage(0); }}
               >
                 <MenuItem value="all">All Status</MenuItem>
-                <MenuItem value="active">Active</MenuItem>
-                <MenuItem value="sold">Sold</MenuItem>
-                <MenuItem value="inactive">Inactive</MenuItem>
+                <MenuItem value="active">On Sale</MenuItem>
+                <MenuItem value="inactive">Not On Sale</MenuItem>
               </Select>
             </FormControl>
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <FormControl fullWidth>
-              <InputLabel>Category</InputLabel>
-              <Select
-                value={filterCategory}
-                label="Category"
-                onChange={(e) => setFilterCategory(e.target.value)}
-              >
-                <MenuItem value="all">All Categories</MenuItem>
-                {categories.map((cat) => (
-                  <MenuItem key={cat} value={cat}>{cat}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12} md={2}>
             <Button
               fullWidth
               variant="outlined"
@@ -315,82 +294,85 @@ const ProductsPage = () => {
             <TableHead>
               <TableRow>
                 <TableCell sx={{ fontWeight: 600 }}>Product</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Category</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Price</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Condition</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Seller</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Location</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Views</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Seller ID</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Image</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredProducts
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((product) => (
-                  <TableRow hover key={product.id}>
-                    <TableCell>
-                      <Box>
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                          {product.title}
+              {loading && products.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} align="center">
+                    <CircularProgress size={24} />
+                  </TableCell>
+                </TableRow>
+              ) : products.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} align="center">
+                    <Typography color="text.secondary">No products found</Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                paginatedProducts.map((product) => (
+                    <TableRow hover key={product.id}>
+                      <TableCell>
+                        <Box>
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                            {product.title}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {product.description}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Typography sx={{ fontWeight: 500 }}>
+                          ${typeof product.price === 'number' ? product.price.toFixed(2) : '0.00'}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {product.description}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          icon={getStatusIcon(product.status)}
+                          label={product.status === 'active' ? 'On Sale' : 'Not On Sale'}
+                          color={getStatusColor(product.status)}
+                          size="small"
+                          variant="outlined"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {product.seller}
                         </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Chip label={product.category} size="small" />
-                    </TableCell>
-                    <TableCell>
-                      <Typography sx={{ fontWeight: 500 }}>
-                        ${product.price.toFixed(2)}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>{product.condition}</TableCell>
-                    <TableCell>
-                      <Chip
-                        icon={getStatusIcon(product.status)}
-                        label={product.status.charAt(0).toUpperCase() + product.status.slice(1)}
-                        color={getStatusColor(product.status)}
-                        size="small"
-                        variant="outlined"
-                      />
-                    </TableCell>
-                    <TableCell>{product.seller}</TableCell>
-                    <TableCell>{product.location}</TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <ViewIcon fontSize="small" sx={{ mr: 0.5, color: 'text.secondary' }} />
-                        {product.views.toLocaleString()}
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleEditProduct(product)}
-                        color="primary"
-                        title="Edit"
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleDeleteProduct(product)}
-                        color="error"
-                        title="Delete"
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                      <TableCell>
+                        {product.imagePath ? (
+                          <Box
+                            component="img"
+                            src={"http://localhost:3000" + product.imagePath}
+                            alt={product.title}
+                            sx={{
+                              width: 50,
+                              height: 50,
+                              objectFit: 'cover',
+                              borderRadius: 1,
+                            }}
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <Typography variant="caption" color="text.secondary">No image</Typography>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+              )}
             </TableBody>
           </Table>
         </TableContainer>
         <TablePagination
-          rowsPerPageOptions={[5, 10, 25]}
+          rowsPerPageOptions={[5, 10, 25, 50]}
           component="div"
           count={filteredProducts.length}
           rowsPerPage={rowsPerPage}
@@ -400,77 +382,42 @@ const ProductsPage = () => {
         />
       </Paper>
 
-      {/* Edit Product Dialog */}
+      {/* Edit Product Dialog - Disabled */}
       <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Edit Product</DialogTitle>
+        <DialogTitle>Edit Product (Disabled)</DialogTitle>
         <DialogContent>
+          <Alert severity="warning" sx={{ mt: 2 }}>
+            Editing products is currently disabled as the backend API only supports read operations.
+          </Alert>
           {selectedProduct && (
             <Box sx={{ pt: 2 }}>
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Product Title"
-                    defaultValue={selectedProduct.title}
-                    variant="outlined"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Price"
-                    type="number"
-                    defaultValue={selectedProduct.price}
-                    InputProps={{ startAdornment: <InputAdornment position="start">$</InputAdornment> }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth>
-                    <InputLabel>Status</InputLabel>
-                    <Select defaultValue={selectedProduct.status} label="Status">
-                      <MenuItem value="active">Active</MenuItem>
-                      <MenuItem value="sold">Sold</MenuItem>
-                      <MenuItem value="inactive">Inactive</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Description"
-                    multiline
-                    rows={3}
-                    defaultValue={selectedProduct.description}
-                  />
-                </Grid>
-              </Grid>
+              <Typography variant="body2" color="text.secondary">
+                Product: {selectedProduct.title}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Current Status: {selectedProduct.status}
+              </Typography>
             </Box>
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
-          <Button 
-            variant="contained" 
-            onClick={() => handleSaveProduct(selectedProduct)}
-          >
-            Save Changes
-          </Button>
+          <Button onClick={() => setEditDialogOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Confirmation Dialog - Disabled */}
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogTitle>Delete Product (Disabled)</DialogTitle>
         <DialogContent>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            Deleting products is currently disabled as the backend API only supports read operations.
+          </Alert>
           <Typography>
-            Are you sure you want to delete "{selectedProduct?.title}"? This action cannot be undone.
+            Product "{selectedProduct?.title}" cannot be deleted through this interface.
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-          <Button onClick={confirmDelete} color="error" variant="contained">
-            Delete
-          </Button>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
 
