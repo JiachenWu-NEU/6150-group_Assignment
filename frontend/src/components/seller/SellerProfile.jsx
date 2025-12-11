@@ -105,10 +105,7 @@ function SellerProfile() {
       try {
         const productsResponse = await getMyProducts();
         if (productsResponse.data) {
-          const userId = getUserInfo()?.id;
-          const myProducts = productsResponse.data.filter(
-            (product) => product.sellerId === userId
-          );
+          const myProducts = productsResponse.data;
           const onSale = myProducts.filter((p) => p.isOnSale).length;
 
           setStats((prev) => ({

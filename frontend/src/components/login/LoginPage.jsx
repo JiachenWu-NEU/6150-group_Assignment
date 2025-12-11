@@ -63,8 +63,11 @@ function LoginPage() {
       alert(data.message || "Login successful!");
 
       // Redirect based on user type
+      console.log("User type:", data.data.type);
       if (data.data.type === "admin") {
         navigate("/admin");
+      } else if (data.data.type === "vender") {
+        navigate("/seller/products");
       } else {
         navigate("/products");
       }

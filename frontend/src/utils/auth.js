@@ -17,8 +17,15 @@ export const setUserInfo = (userInfo) => {
 };
 
 export const getUserInfo = () => {
-  const userInfo = localStorage.getItem("userInfo");
-  return userInfo ? JSON.parse(userInfo) : null;
+  const token = localStorage.getItem("token");
+  const userType = localStorage.getItem("userType");
+
+  if (!token || !userType) return null;
+
+  return {
+    token,
+    type: userType, // 注意这里叫 type，和后端的 data.data.type 一致
+  };
 };
 
 export const removeUserInfo = () => {

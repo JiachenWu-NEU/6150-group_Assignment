@@ -80,6 +80,7 @@ function SellerProductList() {
   // 获取用户信息
   useEffect(() => {
     const user = getUserInfo();
+    console.log("User info:", user);
     if (!user) {
       navigate("/login");
     } else {
@@ -96,15 +97,10 @@ function SellerProductList() {
     try {
       setLoading(true);
       
-      // 获取商品列表
+      // 获取所有商品列表
       const productsResponse = await getMyProducts();
       if (productsResponse.data) {
-        // 从后端获取的商品数据中，过滤出属于当前卖家的商品
-        const userId = getUserInfo()?.id;
-        const myProducts = productsResponse.data.filter(
-          (product) => product.sellerId === userId
-        );
-        setProducts(myProducts);
+        setProducts(productsResponse.data);
       }
 
       // 获取销售记录
