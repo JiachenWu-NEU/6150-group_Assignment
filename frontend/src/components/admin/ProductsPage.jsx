@@ -361,7 +361,7 @@ const ProductsPage = () => {
                     display: { xs: 'none', sm: 'table-cell' },
                   }}
                 >
-                  Seller ID
+                  Vender ID
                 </TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Image</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
