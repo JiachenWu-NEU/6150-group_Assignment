@@ -174,7 +174,7 @@ function AddProduct() {
             <ArrowBackIcon />
           </IconButton>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            发布新商品
+            Publish new Product
           </Typography>
         </Toolbar>
       </AppBar>
