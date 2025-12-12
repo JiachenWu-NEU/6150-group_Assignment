@@ -1,8 +1,11 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const { OAuth2Client } = require("google-auth-library");
+const crypto = require("crypto");
 
 const JWT_SECRET = process.env.JWT_SECRET || "alitimig_jwt_secret";
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 
 exports.register = async (req, res) => {
@@ -238,6 +241,72 @@ exports.getCurrentUserInfo = async (req, res) => {
     });
   } catch (err) {
     console.error("Error in getCurrentUserInfo:", err);
+    return res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+exports.googleLogin = async (req, res) => {
+  try {
+    const { credential } = req.body || {};
+
+    if (!credential) {
+      return res.status(400).json({ error: "Google credential is required." });
+    }
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const email = payload?.email;
+    const name = payload?.name || email?.split("@")[0];
+    const emailVerified = payload?.email_verified;
+
+    if (!email || !emailVerified) {
+      return res.status(400).json({ error: "Invalid Google account." });
+    }
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      const randomPassword = crypto.randomBytes(16).toString("hex");
+      const hashed = await bcrypt.hash(randomPassword, 10);
+
+      user = await User.create({
+        username: name,
+        email,
+        password: hashed,
+        type: "buyer",
+        address: "temporary address",
+        isAvailable: true,
+      });
+    }
+
+    if (!user.isAvailable) {
+      return res
+        .status(403)
+        .json({ error: "This account is disabled and cannot login." });
+    }
+
+    const token = jwt.sign(
+      {
+        userId: user._id.toString(),
+        type: user.type,
+      },
+      JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    return res.status(200).json({
+      message: "Login with Google successfully.",
+      data: {
+        type: user.type,
+        token,
+      },
+    });
+  } catch (err) {
+    console.error("Error in googleLogin:", err);
     return res.status(500).json({ error: "Internal server error." });
   }
 };

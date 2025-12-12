@@ -382,5 +382,7 @@ router.delete("/:id", auth, adminOnly, userController.deleteUser);
  *         description: Internal server error
  */
 router.get("/me", auth, userController.getCurrentUserInfo);
+// google login
+router.post("/google-login", userController.googleLogin);
 
 module.exports = router;

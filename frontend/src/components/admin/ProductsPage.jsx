@@ -36,6 +36,7 @@ import {
   Clear as ClearIcon,
   CheckCircle as ActiveIcon,
   Cancel as InactiveIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { request } from '../../services/api';
 
@@ -50,17 +51,19 @@ const ProductsPage = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
     severity: 'success',
   });
 
-  // 这些 dialog 现在相当于占位，不影响布局
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  // 删除相关 state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
+  // 拉取所有商品
   const fetchProducts = async () => {
     try {
       setLoading(true);
@@ -72,7 +75,7 @@ const ProductsPage = () => {
       const apiProducts = response.data || [];
 
       const formattedProducts = apiProducts.map((product) => ({
-        id: product._id || '',
+        id: product.id || '',
         title: product.name || '',
         price: product.price || 0,
         status: product.isOnSale ? 'active' : 'inactive',
@@ -160,6 +163,48 @@ const ProductsPage = () => {
     }
   };
 
+  const handleDeleteClick = (product) => {
+    setSelectedProduct(product);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedProduct) return;
+
+    setDeleting(true);
+    try {
+      await request(`/product/${selectedProduct.id}`, {
+        method: 'DELETE',
+      });
+
+      setProducts((prev) =>
+        prev.filter((p) => p.id !== selectedProduct.id)
+      );
+
+      setSnackbar({
+        open: true,
+        message: 'Product deleted successfully.',
+        severity: 'success',
+      });
+
+      setDeleteDialogOpen(false);
+      setSelectedProduct(null);
+    } catch (err) {
+      console.error('Error deleting product:', err);
+      const msg =
+        err?.response?.data?.error ||
+        err?.message ||
+        'Failed to delete product';
+      setSnackbar({
+        open: true,
+        message: msg,
+        severity: 'error',
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading && page === 0) {
     return (
       <Box
@@ -190,7 +235,6 @@ const ProductsPage = () => {
 
   return (
     <Box sx={{ p: { xs: 1.5, md: 0 } }}>
-      {/* 标题：小屏略小、居中 */}
       <Typography
         variant={isSmallScreen ? 'h5' : 'h4'}
         gutterBottom
@@ -203,13 +247,12 @@ const ProductsPage = () => {
         Products Management
       </Typography>
 
-      {/* Filter 区：小屏一行一个 */}
+      {/* Filters */}
       <Paper sx={{ p: { xs: 2, md: 3 }, mb: { xs: 2, md: 3 } }}>
         <Grid
           container
           spacing={2}
           alignItems="center"
-          // 小屏垂直布局，大屏水平
           direction={isSmallScreen ? 'column' : 'row'}
         >
           <Grid item xs={12} md={6} sx={{ width: { xs: '100%', md: 'auto' } }}>
@@ -244,11 +287,14 @@ const ProductsPage = () => {
             />
           </Grid>
 
-          <Grid item xs={12} sm={6} md={3} sx={{ width: { xs: '100%', md: 'auto' } }}>
-            <FormControl
-              fullWidth
-              size={isSmallScreen ? 'small' : 'medium'}
-            >
+          <Grid
+            item
+            xs={12}
+            sm={6}
+            md={3}
+            sx={{ width: { xs: '100%', md: 'auto' } }}
+          >
+            <FormControl fullWidth size={isSmallScreen ? 'small' : 'medium'}>
               <InputLabel>Status</InputLabel>
               <Select
                 value={filterStatus}
@@ -265,7 +311,13 @@ const ProductsPage = () => {
             </FormControl>
           </Grid>
 
-          <Grid item xs={12} sm={6} md={3} sx={{ width: { xs: '100%', md: 'auto' } }}>
+          <Grid
+            item
+            xs={12}
+            sm={6}
+            md={3}
+            sx={{ width: { xs: '100%', md: 'auto' } }}
+          >
             <Button
               fullWidth
               variant="outlined"
@@ -279,11 +331,11 @@ const ProductsPage = () => {
         </Grid>
       </Paper>
 
-      {/* 表格：Paper 控制横向滚动范围，Table 设置 minWidth，超出时在内部滑动 */}
+      {/* Table */}
       <Paper
         sx={{
           width: '100%',
-          overflowX: 'auto', // 👈 横向滚动只在 Paper 内部
+          overflowX: 'auto',
         }}
       >
         <TableContainer
@@ -295,7 +347,7 @@ const ProductsPage = () => {
             stickyHeader
             size={isSmallScreen ? 'small' : 'medium'}
             sx={{
-              minWidth: 650, // 👈 小屏时 > 屏幕宽度，产生横向滚动条
+              minWidth: 650,
             }}
           >
             <TableHead>
@@ -303,7 +355,6 @@ const ProductsPage = () => {
                 <TableCell sx={{ fontWeight: 600 }}>Product</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Price</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                {/* Seller ID 在超小屏可以隐藏一点，留空间给主要列 */}
                 <TableCell
                   sx={{
                     fontWeight: 600,
@@ -313,18 +364,19 @@ const ProductsPage = () => {
                   Seller ID
                 </TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Image</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {loading && products.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center">
+                  <TableCell colSpan={6} align="center">
                     <CircularProgress size={24} />
                   </TableCell>
                 </TableRow>
               ) : products.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center">
+                  <TableCell colSpan={6} align="center">
                     <Typography color="text.secondary">
                       No products found
                     </Typography>
@@ -409,6 +461,15 @@ const ProductsPage = () => {
                         </Typography>
                       )}
                     </TableCell>
+                    <TableCell>
+                      <IconButton
+                        color="error"
+                        size="small"
+                        onClick={() => handleDeleteClick(product)}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -427,55 +488,41 @@ const ProductsPage = () => {
         />
       </Paper>
 
-      {/* 下面两个 Dialog 和 snackbar 逻辑你原来有，我保持不动，只是占位 */}
-      <Dialog
-        open={editDialogOpen}
-        onClose={() => setEditDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Edit Product (Disabled)</DialogTitle>
-        <DialogContent>
-          <Alert severity="warning" sx={{ mt: 2 }}>
-            Editing products is currently disabled as the backend API only
-            supports read operations.
-          </Alert>
-          {selectedProduct && (
-            <Box sx={{ pt: 2 }}>
-              <Typography variant="body2" color="text.secondary">
-                Product: {selectedProduct.title}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Current Status: {selectedProduct.status}
-              </Typography>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setEditDialogOpen(false)}>Close</Button>
-        </DialogActions>
-      </Dialog>
-
+      {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
+        onClose={() => (!deleting ? setDeleteDialogOpen(false) : null)}
       >
-        <DialogTitle>Delete Product (Disabled)</DialogTitle>
+        <DialogTitle>Delete Product</DialogTitle>
         <DialogContent>
           <Alert severity="warning" sx={{ mb: 2 }}>
-            Deleting products is currently disabled as the backend API only
-            supports read operations.
+            This action cannot be undone.
           </Alert>
-          <Typography>
-            Product "{selectedProduct?.title}" cannot be deleted through this
-            interface.
+          <Typography sx={{ mb: 1 }}>
+            Are you sure you want to delete product{' '}
+            <strong>"{selectedProduct?.title}"</strong>?
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            ID: {selectedProduct?.id}
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Close</Button>
+          <Button onClick={() => setDeleteDialogOpen(false)} disabled={deleting}>
+            Cancel
+          </Button>
+          <Button
+            onClick={confirmDelete}
+            color="error"
+            variant="contained"
+            disabled={deleting}
+            startIcon={deleting ? <CircularProgress size={16} /> : null}
+          >
+            {deleting ? 'Deleting...' : 'Delete'}
+          </Button>
         </DialogActions>
       </Dialog>
 
+      {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}

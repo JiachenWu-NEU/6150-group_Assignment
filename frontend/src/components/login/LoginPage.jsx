@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { GoogleLogin } from "@react-oauth/google";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -137,6 +138,70 @@ function LoginPage() {
         >
           {loading ? "Logging in..." : "Login"}
         </button>
+  
+        <div
+          style={{
+            marginTop: "16px",
+            marginBottom: "8px",
+            textAlign: "center",
+            color: "#888",
+          }}
+        >
+          or
+        </div>
+  
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
+          <GoogleLogin
+            onSuccess={async (credentialResponse) => {
+              try {
+                setLoading(true);
+                setError("");
+  
+                const res = await fetch(
+                  "http://localhost:3000/user/google-login",
+                  {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                      credential: credentialResponse.credential,
+                    }),
+                  }
+                );
+  
+                if (!res.ok) {
+                  const errBody = await res.json().catch(() => ({}));
+                  throw new Error(errBody.error || "Google login failed.");
+                }
+  
+                const data = await res.json();
+                console.log("✅ Google Login Response:", data);
+  
+                localStorage.setItem("token", data.data.token);
+                localStorage.setItem("userType", data.data.type);
+  
+                alert(data.message || "Login successful!");
+  
+                if (data.data.type === "admin") {
+                  navigate("/admin");
+                } else if (data.data.type === "vender") {
+                  navigate("/seller/products");
+                } else {
+                  navigate("/products");
+                }
+              } catch (err) {
+                console.error(err);
+                setError(err.message);
+              } finally {
+                setLoading(false);
+              }
+            }}
+            onError={() => {
+              setError("Google login failed.");
+            }}
+          />
+        </div>
 
         <p style={{ textAlign: "center", marginTop: "15px" }}>
           Don’t have an account?{" "}
